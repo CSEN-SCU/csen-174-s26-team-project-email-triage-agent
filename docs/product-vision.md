@@ -1,11 +1,11 @@
-for ___ (target customer)  
+for ___ (**target customer**)
 
-who ___ (statement of need or opportunity)  
+who ___ (**statement of need or opportunity**)
 
-the ___ (product name) is a ___ (product category)  
+the ___ (**product name**) is a ___ (**product category**)
 
-that ___ (key benefit, reason to buy)  
+that ___ (**key benefit, reason to buy**)
 
-unlike ___ (primary competitive alternative)  
+unlike ___ (**primary competitive alternative**)
 
-our product ___ (statement of primary differentiation)  
+our product ___ (**statement of primary differentiation**)
