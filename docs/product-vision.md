@@ -1,0 +1,6 @@
+for ___ (target customer)
+who ___ (statement of need or opportunity)
+the ___ (product name) is a ___ (product category)
+that ___ (key benefit, reason to buy)
+unlike ___ (primary competitive alternative)
+our product ___ (statement of primary differentiation)
