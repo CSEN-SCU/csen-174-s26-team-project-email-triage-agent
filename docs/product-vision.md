@@ -1,11 +1,11 @@
-for ___ (**target customer**)
+for **entreprenuers**
 
-who ___ (**statement of need or opportunity**)
+who **need to balance time and ability to respond to/keep track of important information received via email**
 
-the ___ (**product name**) is a ___ (**product category**)
+the **Email Triage Agent** is a **SaaS**
 
-that ___ (**key benefit, reason to buy**)
+that **quickly sorts emails and prioritizes actions**
 
-unlike ___ (**primary competitive alternative**)
+unlike **integrated tools like Google Gemini in Gmail**
 
-our product ___ (**statement of primary differentiation**)
+our product **specializes based on your needs, and is catered for specific needs rather than being more generalized**
