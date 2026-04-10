@@ -1,0 +1,65 @@
+import { Email } from "@/types/email"
+
+export const emails: Email[] = [
+
+    {
+        id: "email-1",
+        sender: "John Doe",
+        email: "john.doe@example.com",
+        subject: "Meeting Reminder",
+        priority: "High",
+        summary: "Client meeting tomorrow at 10 AM",
+        actions: ["Prepare agenda", "Send reminder email"],
+        meetings: ["Client meeting", "Team meeting"],
+    },
+    {
+        id: "email-2",
+        sender: "Jane Smith",
+        email: "jane.smith@example.com",
+        subject: "Project Update",
+        priority: "Medium",
+        summary: "Project update for the week",
+        actions: ["Review progress", "Schedule meeting"],
+        meetings: ["Project meeting", "Client meeting"],
+    },
+    {
+        id: "email-3",
+        sender: "Bob Johnson",
+        email: "bob.johnson@example.com",
+        subject: "Invoice Payment",
+        priority: "Low",
+        summary: "Invoice payment due next week",
+        actions: ["Review invoice", "Send payment reminder"],
+        meetings: [],
+    },
+    {
+        id: "email-4",
+        sender: "Alice Johnson",
+        email: "alice.johnson@example.com",
+        subject: "Meeting Reminder",
+        priority: "High",
+        summary: "Client meeting tomorrow at 10 AM",
+        actions: ["Prepare agenda", "Send reminder email"],
+        meetings: ["Client meeting", "Team meeting"],
+    },
+    {
+        id: "email-5",
+        sender: "John Doe",
+        email: "john.doe@example.com",
+        subject: "Meeting Reminder",
+        priority: "High",
+        summary: "Client meeting tomorrow at 10 AM",
+        actions: ["Prepare agenda", "Send reminder email"],
+        meetings: ["Client meeting", "Team meeting"],
+    },
+    {
+        id: "email-6",
+        sender: "John Doe",
+        email: "john.doe@example.com",
+        subject: "Meeting Reminder",
+        priority: "High",
+        summary: "Client meeting tomorrow at 10 AM",
+        actions: ["Prepare agenda", "Send reminder email"],
+        meetings: ["Client meeting", "Team meeting"],
+    }
+];
