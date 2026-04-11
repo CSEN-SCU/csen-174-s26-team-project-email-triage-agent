@@ -2,10 +2,12 @@ for **entreprenuers**
 
 who **need to balance time and ability to respond to/keep track of important information received via email**
 
-the **Email Triage Agent** is a **SaaS**
+the **Email Triage Agent** is a **SaaS platform**
 
-that **quickly sorts emails and prioritizes actions**
+that **automatically organizes, prioritizes, and surfaces actionable insights from your inbox**
 
-unlike **integrated tools like Google Gemini in Gmail**
+unlike **general-purpose tools like Google Gemini in Gmail**
 
-our product **specializes based on your needs, and is catered for specific needs rather than being more generalized**
+our product **adapts based on your specific workflows, business context, and decision-making patterns to deliver a personalized email management system**
+
+powered by **natural language understanding, intent classification, priority scoring, semantic summarization, and workflow automation**
