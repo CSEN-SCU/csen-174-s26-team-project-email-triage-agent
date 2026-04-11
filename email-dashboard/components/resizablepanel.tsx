@@ -36,12 +36,14 @@ export default function ResizablePanel({
   }
 
   return (
-    <div className="flex">
+    <div className="flex min-h-0 h-full min-w-0 shrink-0">
       <div
-        className="w-1 bg-gray-300 cursor-col-resize"
+        className="h-full w-1 shrink-0 cursor-col-resize bg-gray-300"
         onMouseDown={startDrag}
       />
-      <div className="overflow-auto" style={{ width }}>{children}</div>
+      <div className="h-full min-h-0 overflow-auto" style={{ width }}>
+        {children}
+      </div>
     </div>
   )
 }
