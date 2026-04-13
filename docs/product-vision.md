@@ -1,4 +1,4 @@
-for **entreprenuers**
+for **entrepreneurs**
 
 who **need to balance time and ability to respond to/keep track of important information received via email**
 
