@@ -16,6 +16,28 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Auth (NextAuth)
+
+This frontend is wired with `next-auth` (NextAuth) using the **Next.js App Router**.
+
+- **Auth route**: `app/api/auth/[...nextauth]/route.ts`
+- **Sign-in page**: `app/auth/signin/page.tsx`
+- **Provider wrapper**: `app/providers.tsx` (used by `app/layout.tsx`)
+
+### Local demo login
+
+Current setup uses a mock **Credentials** provider so you can build UI before a real backend exists:
+
+- **Email**: any value
+- **Password**: `demo`
+
+### Environment variables
+
+Copy `.env.local.example` to `.env.local` and fill in:
+
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

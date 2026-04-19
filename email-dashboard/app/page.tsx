@@ -1,6 +1,10 @@
 import Link from "next/link"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
-export default function Home() {
+export default async function Home() {
+  const session = await getServerSession(authOptions)
+
   return (
     <div className="flex flex-col items-center justify-center h-screen space-y-6">
       <h1 className="text-3xl font-bold">
@@ -12,8 +16,14 @@ export default function Home() {
       </p>
 
       <div className="flex gap-4">
-        <Link href="/onboarding">
+        <Link href={session ? "/inbox" : "/auth/signin"}>
           <button className="px-4 py-2 bg-black text-white rounded">
+            {session ? "Open Inbox" : "Sign in"}
+          </button>
+        </Link>
+
+        <Link href="/onboarding">
+          <button className="px-4 py-2 border rounded">
             Get Started
           </button>
         </Link>
