@@ -1,0 +1,197 @@
+# .cursorrules — Email Triage Agent
+
+Context for AI coding assistants (Cursor, Claude Code, Copilot) working in this
+repo. Treat this as onboarding: read it before generating code, and keep
+suggestions consistent with the product vision, stack, and conventions below.
+
+---
+
+## 1. Product vision (read first, do not duplicate)
+
+- **Vision statement:** see `docs/product-vision.md` for the full vision
+  and positioning (who we build for, why, and how we differ from general-purpose
+  tools like Gemini-in-Gmail).
+- **Problem framing & HMW:** see `docs/problem-framing-canvas.md` for the
+  problem we're actually solving, assumptions we're watching, and the
+  "How Might We" statement that guides scope.
+- **User narrative:** see `docs/storyboard.md` for the 6-frame storyboard
+  that grounds UX decisions in a concrete founder journey.
+
+**Rule:** when a suggestion touches product framing, user persona, or scope,
+*reference* these docs rather than restating them. If a change would contradict
+the vision or HMW, flag it instead of silently diverging.
+
+One-line summary (for prompts only, not as a replacement):
+> A personalized email triage SaaS for entrepreneurs — prioritizes, summarizes,
+> and surfaces action-ready insights adapted to the founder's workflows and
+> business context.
+
+---
+
+## 2. Repo layout
+
+```
+.
+├── docs/                      # Product artifacts (vision, canvas, storyboard)
+├── email-dashboard/           # Next.js app (the product surface)
+│   ├── app/                   # App Router routes (inbox, onboarding, auth, api)
+│   ├── components/            # App-specific React components
+│   │   └── ui/                # shadcn/Radix primitives (button, card, accordion)
+│   ├── data/                  # Static mock data (emails.ts, tasks.ts) — temporary
+│   ├── lib/                   # auth.ts, utils.ts (cn() etc.)
+│   ├── types/                 # Shared TypeScript types (source of truth)
+│   ├── public/                # Static assets
+│   ├── AGENTS.md              # Next.js-version-specific warning for AI agents
+│   └── CLAUDE.md              # Re-exports AGENTS.md for Claude Code
+└── .cursor/skills/            # Product-thinking skills (storyboard, problem-framing, frontend-design)
+```
+
+All application code lives inside `email-dashboard/`. The repo root is for
+product docs, tooling config, and this file.
+
+---
+
+## 3. Stack
+
+- **Framework:** Next.js **16.2.3** (App Router). React **19**.
+- **Language:** TypeScript, `strict: true`. Target ES2017.
+- **Styling:** Tailwind CSS **v4** (via `@tailwindcss/postcss`) + `tw-animate-css`.
+- **UI primitives:** shadcn/ui on top of Radix UI; `class-variance-authority`,
+  `clsx`, `tailwind-merge` (`cn()` lives in `lib/utils.ts`).
+- **Icons:** `lucide-react`.
+- **Auth:** `next-auth` v4 (see `lib/auth.ts`, `app/api/auth/...`,
+  `app/auth/signin/`).
+- **Path alias:** `@/*` resolves from `email-dashboard/` root
+  (e.g. `@/components/ui/card`, `@/types/email`).
+
+### Next.js 16 warning (IMPORTANT)
+
+From `email-dashboard/AGENTS.md`:
+
+> This is NOT the Next.js you know. This version has breaking changes — APIs,
+> conventions, and file structure may all differ from your training data. Read
+> the relevant guide in `node_modules/next/dist/docs/` before writing any code.
+> Heed deprecation notices.
+
+**Before generating Next.js-specific code** (routing, server components,
+metadata, caching, dynamic APIs like `headers()`/`cookies()`/`params`,
+`next/image`, `next/link`, middleware, route handlers), check
+`email-dashboard/node_modules/next/dist/docs/` for the in-tree guide instead
+of relying on memory. Do not guess API shapes.
+
+---
+
+## 4. Coding conventions (as observed in the codebase — keep consistent)
+
+### TypeScript / JavaScript
+- **Indent:** 4 spaces.
+- **Semicolons:** no (follow existing files).
+- **Quotes:** double quotes for strings and JSX attributes.
+- **Exports:** named for types, default for page/component modules where it's
+  already the pattern (e.g. `export default function Home()` in `app/*/page.tsx`).
+- **Client vs server:** add `"use client"` at the top only when the component
+  actually needs it (state, effects, browser APIs, event handlers). Prefer
+  server components by default.
+- **Imports:** always use the `@/` alias for cross-directory imports. Group:
+  external → `@/` internal → relative.
+
+### File and symbol naming
+- **Component files:** lowercase, single-word or compact concat — matches
+  existing files (`emailcard.tsx`, `formcontainer.tsx`, `resizablepanel.tsx`).
+  Do not introduce a new convention (PascalCase filenames, kebab-case) mid-repo.
+- **`components/ui/`:** shadcn-generated primitives — keep lowercase
+  (`button.tsx`, `card.tsx`, `accordion.tsx`). Regenerate via `shadcn` CLI
+  rather than hand-editing where possible.
+- **Types:** `PascalCase` (`Email`, `Task`); live in `types/` and are imported
+  via `@/types/...`.
+- **Routes:** App Router directories are lowercase (`inbox`, `onboarding`,
+  `auth/signin`). Page file is always `page.tsx`.
+
+### React / UI
+- Compose with Radix + shadcn primitives from `components/ui/` before adding
+  new dependencies.
+- Use `cn()` from `@/lib/utils` for conditional class merging.
+- Icons come from `lucide-react` — avoid adding a second icon library.
+- Match the existing visual system (Tailwind v4 design tokens in
+  `app/globals.css`); don't introduce ad-hoc colors or spacing scales.
+
+### Comments
+- Only write comments that explain **intent, constraint, or trade-off** —
+  never narrate what code does. Follow the style already in
+  `app/inbox/page.tsx` and `types/email.ts` (block comments explaining the
+  mock-to-API migration path, JSDoc on shared types).
+
+---
+
+## 5. Data model & backend contract
+
+- **Source of truth:** `email-dashboard/types/email.ts` defines `Email` and
+  `Task`. When adding fields, extend these types first — the UI and (future)
+  API must agree on shapes here.
+- **Today:** `data/emails.ts` and `data/tasks.ts` are static mocks consumed
+  directly by client components.
+- **Planned:** swap mocks for API routes under `app/api/` (e.g.
+  `GET /api/emails`, `GET /api/tasks`, `PATCH /api/tasks/:id`,
+  `GET /api/insights/weekly`). The migration plan is documented inline at the
+  top of `app/inbox/page.tsx` — **preserve that plan**; don't break the
+  mock/API shape parity.
+- **Dates:** task `dueDate` is `YYYY-MM-DD` so lexicographic sort equals
+  chronological sort. Keep it that way.
+- **Priority:** `"High" | "Medium" | "Low"` union — extend the union in
+  `types/email.ts` rather than stringly typing new values inline.
+
+---
+
+## 6. Scope guardrails (what to keep in mind)
+
+From `docs/problem-framing-canvas.md`:
+
+- **Target user:** early-stage founders (especially technical founders less
+  familiar with business processes like investor coordination). Optimize UX
+  for *founders*, not generic knowledge workers.
+- **Differentiator:** adapts to the founder's **specific workflows and
+  business context** — it's not "another AI summary." Prioritization,
+  action extraction, and context-aware drafting are the wedge.
+- **Watch-out:** the team's network is student-and-young-technical-founder
+  heavy; avoid designs that assume that demographic is universal. Keep the
+  product usable for non-technical and later-stage founders too.
+- **Protect the user's time:** every feature should trade inbox minutes
+  back to the founder. If a suggestion adds friction without clear triage
+  value, push back.
+
+---
+
+## 7. When suggesting code
+
+1. **Read before writing.** If the change touches Next.js APIs, consult
+   `email-dashboard/node_modules/next/dist/docs/`. If it touches product
+   scope, consult `docs/`.
+2. **Respect the mock → API migration path.** Don't hardcode to mocks in a
+   way that will force a rewrite when the backend lands. Don't invent an API
+   surface without updating `types/` and the inline plan in
+   `app/inbox/page.tsx`.
+3. **Stay inside the existing stack.** Prefer Radix/shadcn + Tailwind + the
+   current utilities over new dependencies. If a new dep is genuinely needed,
+   call it out explicitly with justification.
+4. **Match style, not your defaults.** 4-space indent, no semicolons, double
+   quotes, lowercase component filenames, `@/` imports.
+5. **Keep secrets out.** `next-auth` config reads from env vars — never inline
+   credentials, API keys, or OAuth client secrets.
+6. **Ask when ambiguous.** If a request conflicts with the vision, the HMW,
+   or the storyboard, surface the conflict rather than silently choosing.
+
+---
+
+## 8. Useful commands
+
+Run from `email-dashboard/`:
+
+```bash
+npm run dev      # Next dev server
+npm run build    # Production build
+npm run start    # Start production server
+npm run lint     # ESLint (eslint-config-next)
+```
+
+There is no test runner wired up yet — if you add one, update this section and
+the root `README.md`.
