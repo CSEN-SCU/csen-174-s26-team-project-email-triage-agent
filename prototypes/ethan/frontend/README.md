@@ -33,10 +33,9 @@ Current setup uses a mock **Credentials** provider so you can build UI before a 
 
 ### Environment variables
 
-Copy `.env.local.example` to `.env.local` and fill in:
+Team convention: variable names and docs live in `../.env.example` at the prototype root (committed). Copy that file to `../.env` for your personal keys (gitignored at repo root).
 
-- `NEXTAUTH_URL`
-- `NEXTAUTH_SECRET`
+Next.js loads env files from this `frontend/` directory, so for local dev copy the same keys into **`.env.local`** here (also gitignored). Fill in at least `NEXTAUTH_SECRET` (generate with `openssl rand -base64 32`).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

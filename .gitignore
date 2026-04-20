@@ -1,0 +1,6 @@
+# Environment and secrets (public repo — never commit API keys)
+# Match .env files anywhere under this repo; allow committed templates.
+.env
+.env.*
+!.env.example
+!.env*.example
