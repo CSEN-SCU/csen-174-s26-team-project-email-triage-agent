@@ -35,7 +35,11 @@ Current setup uses a mock **Credentials** provider so you can build UI before a 
 
 Team convention: variable names and docs live in `../.env.example` at the prototype root (committed). Copy that file to `../.env` for your personal keys (gitignored at repo root).
 
-Next.js loads env files from this `frontend/` directory, so for local dev copy the same keys into **`.env.local`** here (also gitignored). Fill in at least `NEXTAUTH_SECRET` (generate with `openssl rand -base64 32`).
+Next.js only reads env from this directory. Copy **`.env.example`** to **`.env.local`** (gitignored). **`NEXTAUTH_SECRET` is required** (generate with `openssl rand -base64 32`); the app will not start without it.
+
+### Triage API (inbox)
+
+The inbox page loads emails, tasks, and weekly insights from the Ethan FastAPI service when it is reachable (default `http://127.0.0.1:8000`). Run the backend from `../backend` (`uvicorn app.main:app --reload --port 8000`). Override the base URL with **`NEXT_PUBLIC_TRIAGE_API_BASE_URL`** in `.env.local` if needed. If the API is down, the UI falls back to mock data and shows a yellow notice.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
