@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Email, TriageResult } from "@/lib/types";
+import type { Email, PartialTriageResult, Stage } from "@/lib/types";
 
 const intentLabel: Record<string, string> = {
   investor: "Investor",
@@ -20,25 +20,51 @@ function PriorityDot({ value }: { value: number }) {
   return <span className={`inline-block w-2 h-2 rounded-full ${color}`} />;
 }
 
+function StagePill({ stage, done }: { stage?: Stage; done?: boolean }) {
+  if (done) return null;
+  const label =
+    stage === "summarize"
+      ? "summarizing…"
+      : stage === "actions"
+      ? "extracting actions…"
+      : stage === "draft"
+      ? "drafting reply…"
+      : "classifying…";
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+      {label}
+    </span>
+  );
+}
+
 export function TriageCard({
   result,
   email,
 }: {
-  result: TriageResult;
+  result: PartialTriageResult;
   email?: Email;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasDraft = !!result.draft_reply;
+  const signal = result.signal;
 
   return (
     <article className="bg-white border border-line rounded-2xl p-5 card-edge">
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs text-muted mb-1">
-            <PriorityDot value={result.signal.priority} />
-            <span className="uppercase tracking-wide">{intentLabel[result.signal.intent]}</span>
-            <span>·</span>
-            <span>priority {result.signal.priority}</span>
+          <div className="flex items-center gap-2 text-xs text-muted mb-1 flex-wrap">
+            {signal && <PriorityDot value={signal.priority} />}
+            {signal && (
+              <>
+                <span className="uppercase tracking-wide">
+                  {intentLabel[signal.intent]}
+                </span>
+                <span>·</span>
+                <span>priority {signal.priority}</span>
+              </>
+            )}
+            <StagePill stage={result.stage} done={result.done} />
           </div>
           <h3 className="font-serif text-lg leading-snug truncate">
             {email?.subject ?? result.email_id}
@@ -51,11 +77,19 @@ export function TriageCard({
         </div>
       </header>
 
-      <p className="mt-3 text-sm leading-relaxed">{result.summary}</p>
+      {result.summary ? (
+        <p className="mt-3 text-sm leading-relaxed">{result.summary}</p>
+      ) : (
+        <p className="mt-3 text-sm leading-relaxed text-muted italic">
+          waiting for summary…
+        </p>
+      )}
 
-      <p className="mt-2 text-xs italic text-muted">{result.signal.reason}</p>
+      {signal?.reason && (
+        <p className="mt-2 text-xs italic text-muted">{signal.reason}</p>
+      )}
 
-      {result.actions.length > 0 && (
+      {result.actions && result.actions.length > 0 && (
         <ul className="mt-4 space-y-1.5">
           {result.actions.map((a, i) => (
             <li key={i} className="text-sm flex items-start gap-2">
@@ -85,6 +119,10 @@ export function TriageCard({
             </div>
           )}
         </div>
+      )}
+
+      {result.error && (
+        <p className="mt-3 text-xs text-red-700">error: {result.error}</p>
       )}
     </article>
   );

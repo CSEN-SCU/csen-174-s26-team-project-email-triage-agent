@@ -1,4 +1,9 @@
-import type { Email, TriageDigest, TriageResult } from "./types";
+import type {
+  Email,
+  StageEvent,
+  TriageDigest,
+  TriageResult,
+} from "./types";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -42,13 +47,20 @@ export const api = {
   },
 
   /**
-   * Streams triage results one email at a time via SSE.
+   * Streams triage progress via SSE. Fires `onStage` after every LangGraph node
+   * completes (per email), `onEmailDone` when all stages for an email finish.
    * Resolves when the server sends `event: done`.
    */
   async triageStream(
     userContext: string | undefined,
-    onResult: (r: TriageResult) => void,
-    onStart?: (total: number) => void
+    handlers: {
+      onStart?: (total: number) => void;
+      onStage?: (e: StageEvent) => void;
+      onEmailDone?: (emailId: string) => void;
+      onError?: (emailId: string, message: string) => void;
+      // Legacy per-email callback: fired alongside onEmailDone for compatibility.
+      onResult?: (r: TriageResult) => void;
+    }
   ): Promise<void> {
     const res = await fetch("/api/triage/stream", {
       method: "POST",
@@ -74,9 +86,18 @@ export const api = {
         if (!eventLine || !dataLine) continue;
         const event = eventLine.slice(6).trim();
         const data = dataLine.slice(5).trim();
-        if (event === "start") onStart?.(JSON.parse(data).total);
-        else if (event === "email") onResult(JSON.parse(data));
-        else if (event === "done") return;
+        if (event === "start") handlers.onStart?.(JSON.parse(data).total);
+        else if (event === "stage") handlers.onStage?.(JSON.parse(data));
+        else if (event === "email_done") {
+          const parsed = JSON.parse(data) as { email_id: string };
+          handlers.onEmailDone?.(parsed.email_id);
+        } else if (event === "error") {
+          const parsed = JSON.parse(data) as {
+            email_id: string;
+            message: string;
+          };
+          handlers.onError?.(parsed.email_id, parsed.message);
+        } else if (event === "done") return;
       }
     }
   },

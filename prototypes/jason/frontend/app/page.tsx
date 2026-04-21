@@ -4,11 +4,20 @@ import { useEffect, useMemo, useState } from "react";
 import { BucketColumn } from "@/components/BucketColumn";
 import { ContextCard } from "@/components/ContextCard";
 import { api } from "@/lib/api";
-import type { Bucket, Email, TriageResult } from "@/lib/types";
+import type {
+  Bucket,
+  Email,
+  PartialTriageResult,
+  Stage,
+} from "@/lib/types";
+
+const STAGE_ORDER: Stage[] = ["classify", "summarize", "actions", "draft"];
 
 export default function Home() {
   const [emails, setEmails] = useState<Email[]>([]);
-  const [results, setResults] = useState<Record<string, TriageResult>>({});
+  const [results, setResults] = useState<Record<string, PartialTriageResult>>(
+    {}
+  );
   const [running, setRunning] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,18 +32,27 @@ export default function Home() {
     return m;
   }, [emails]);
 
+  // Only emails that have made it to classify are bucketable; the rest stay
+  // in a "pending" lane until classify lands.
   const byBucket = useMemo(() => {
-    const groups: Record<Bucket, TriageResult[]> = {
+    const groups: Record<Bucket, PartialTriageResult[]> = {
       act_today: [],
       decide_this_week: [],
       fyi: [],
     };
-    for (const r of Object.values(results)) groups[r.signal.bucket].push(r);
+    for (const r of Object.values(results)) {
+      if (r.signal) groups[r.signal.bucket].push(r);
+    }
     for (const k of Object.keys(groups) as Bucket[]) {
-      groups[k].sort((a, b) => b.signal.priority - a.signal.priority);
+      groups[k].sort((a, b) => (b.signal!.priority) - (a.signal!.priority));
     }
     return groups;
   }, [results]);
+
+  const pending = useMemo(
+    () => Object.values(results).filter((r) => !r.signal && !r.done && !r.error),
+    [results]
+  );
 
   async function runTriage() {
     setError(null);
@@ -42,11 +60,32 @@ export default function Home() {
     setRunning(true);
     setTotal(null);
     try {
-      await api.triageStream(
-        undefined,
-        (r) => setResults((prev) => ({ ...prev, [r.email_id]: r })),
-        (t) => setTotal(t)
-      );
+      await api.triageStream(undefined, {
+        onStart: (t) => setTotal(t),
+        onStage: ({ email_id, stage, patch }) =>
+          setResults((prev) => ({
+            ...prev,
+            [email_id]: {
+              ...(prev[email_id] ?? { email_id }),
+              ...patch,
+              stage,
+            },
+          })),
+        onEmailDone: (emailId) =>
+          setResults((prev) => ({
+            ...prev,
+            [emailId]: { ...(prev[emailId] ?? { email_id: emailId }), done: true },
+          })),
+        onError: (emailId, message) =>
+          setResults((prev) => ({
+            ...prev,
+            [emailId]: {
+              ...(prev[emailId] ?? { email_id: emailId }),
+              error: message,
+              done: true,
+            },
+          })),
+      });
     } catch (e) {
       setError(String(e));
     } finally {
@@ -54,7 +93,7 @@ export default function Home() {
     }
   }
 
-  const done = Object.keys(results).length;
+  const done = Object.values(results).filter((r) => r.done).length;
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-10">
@@ -120,6 +159,27 @@ export default function Home() {
             </div>
           )}
 
+          {pending.length > 0 && (
+            <div className="bg-white border border-line rounded-2xl p-4 card-edge">
+              <p className="text-xs uppercase tracking-wide text-muted mb-2">
+                Classifying {pending.length}…
+              </p>
+              <ul className="text-sm space-y-1">
+                {pending.map((p) => (
+                  <li key={p.email_id} className="flex items-center gap-2">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                    <span className="truncate">
+                      {emailsById[p.email_id]?.subject ?? p.email_id}
+                    </span>
+                    <span className="text-xs text-muted ml-auto">
+                      {stageLabel(p.stage)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <BucketColumn
             title="Act today"
             subtitle="Time-critical. Reply or decide now."
@@ -148,4 +208,10 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+function stageLabel(stage: Stage | undefined): string {
+  if (!stage) return "queued";
+  const idx = STAGE_ORDER.indexOf(stage);
+  return idx >= 0 ? `${stage} (${idx + 1}/${STAGE_ORDER.length})` : stage;
 }

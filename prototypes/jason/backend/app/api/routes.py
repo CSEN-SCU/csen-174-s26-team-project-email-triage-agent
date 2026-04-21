@@ -2,12 +2,13 @@ import asyncio
 import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.agent.graph import triage_email
+from app.agent.graph import get_graph, triage_email
 from app.data.mock_inbox import DEFAULT_USER_CONTEXT, MOCK_EMAILS
 from app.models.email import Bucket, Email, TriageDigest, TriageResult
 
@@ -98,9 +99,42 @@ async def triage(payload: TriagePayload) -> TriageDigest:
     return _bucket_results(list(results))
 
 
+# Maps internal LangGraph node names to stable, UI-friendly stage labels.
+_STAGE_LABELS = {
+    "classify_node": "classify",
+    "summarize_node": "summarize",
+    "actions_node": "actions",
+    "draft_node": "draft",
+    "skip_draft_node": "draft",
+}
+
+
+def _serialize_patch(patch: dict[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key, value in patch.items():
+        if hasattr(value, "model_dump"):
+            out[key] = value.model_dump(mode="json")
+        elif isinstance(value, list):
+            out[key] = [
+                v.model_dump(mode="json") if hasattr(v, "model_dump") else v
+                for v in value
+            ]
+        else:
+            out[key] = value
+    return out
+
+
 @router.post("/triage/stream")
 async def triage_stream(payload: TriagePayload):
-    """Server-sent events: emit one JSON line per email as it resolves."""
+    """SSE: emit per-stage updates as each LangGraph node completes per email.
+
+    Events:
+      - start      {total}
+      - stage      {email_id, stage, patch}   # stage ∈ classify|summarize|actions|draft
+      - email_done {email_id}
+      - error      {email_id, message}
+      - done       {}
+    """
     global _user_context
     if payload.user_context:
         _user_context = payload.user_context
@@ -109,15 +143,48 @@ async def triage_stream(payload: TriagePayload):
 
     async def event_source():
         loop = asyncio.get_running_loop()
-        with ThreadPoolExecutor(max_workers=min(8, len(emails) or 1)) as pool:
-            tasks = [
-                loop.run_in_executor(pool, triage_email, email, context)
-                for email in emails
-            ]
+        queue: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue()
+        graph = get_graph()
+
+        def put(event: str, data: dict[str, Any]) -> None:
+            loop.call_soon_threadsafe(queue.put_nowait, (event, data))
+
+        def run_one(email: Email) -> None:
+            try:
+                for update in graph.stream(
+                    {"email": email, "user_context": context},
+                    stream_mode="updates",
+                ):
+                    for node, patch in update.items():
+                        stage = _STAGE_LABELS.get(node, node)
+                        put(
+                            "stage",
+                            {
+                                "email_id": email.id,
+                                "stage": stage,
+                                "patch": _serialize_patch(patch or {}),
+                            },
+                        )
+                put("email_done", {"email_id": email.id})
+            except Exception as exc:  # noqa: BLE001 — surface to client
+                put("error", {"email_id": email.id, "message": str(exc)})
+
+        pool = ThreadPoolExecutor(max_workers=min(8, len(emails) or 1))
+        try:
+            for email in emails:
+                loop.run_in_executor(pool, run_one, email)
+
             yield f"event: start\ndata: {json.dumps({'total': len(emails)})}\n\n"
-            for coro in asyncio.as_completed(tasks):
-                result = await coro
-                yield f"event: email\ndata: {result.model_dump_json()}\n\n"
+
+            remaining = len(emails)
+            while remaining > 0:
+                event, data = await queue.get()
+                yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
+                if event in ("email_done", "error"):
+                    remaining -= 1
+
             yield "event: done\ndata: {}\n\n"
+        finally:
+            pool.shutdown(wait=False)
 
     return StreamingResponse(event_source(), media_type="text/event-stream")

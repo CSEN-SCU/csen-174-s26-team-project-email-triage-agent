@@ -1,6 +1,6 @@
 "use client";
 
-import type { Email, TriageResult } from "@/lib/types";
+import type { Email, PartialTriageResult } from "@/lib/types";
 import { TriageCard } from "./TriageCard";
 
 export function BucketColumn({
@@ -14,7 +14,7 @@ export function BucketColumn({
   title: string;
   subtitle: string;
   accent: "act" | "decide" | "fyi";
-  results: TriageResult[];
+  results: PartialTriageResult[];
   emails: Record<string, Email>;
   empty: string;
 }) {

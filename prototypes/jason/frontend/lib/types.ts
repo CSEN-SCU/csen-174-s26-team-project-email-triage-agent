@@ -42,6 +42,30 @@ export interface TriageResult {
   draft_reply?: string | null;
 }
 
+export type Stage = "classify" | "summarize" | "actions" | "draft";
+
+export interface PartialTriageResult {
+  email_id: string;
+  signal?: TriageSignal;
+  summary?: string;
+  actions?: ActionItem[];
+  draft_reply?: string | null;
+  stage?: Stage;
+  done?: boolean;
+  error?: string;
+}
+
+export interface StageEvent {
+  email_id: string;
+  stage: Stage;
+  patch: {
+    signal?: TriageSignal;
+    summary?: string;
+    actions?: ActionItem[];
+    draft_reply?: string | null;
+  };
+}
+
 export interface TriageDigest {
   user_context: string;
   generated_at: string;
