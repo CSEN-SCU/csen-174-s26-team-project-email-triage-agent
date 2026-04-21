@@ -2,6 +2,19 @@ import type { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 
 /**
+ * JWT cookies are encrypted with this secret. No hardcoded fallback — set `NEXTAUTH_SECRET`
+ * in `frontend/.env.local` (never commit that file). If the secret changes, clear `localhost`
+ * cookies once to avoid `JWT_SESSION_ERROR` / decryption failed.
+ */
+function resolveNextAuthSecret(): string {
+    const fromEnv = process.env.NEXTAUTH_SECRET?.trim()
+    if (fromEnv) return fromEnv
+    throw new Error(
+        "NEXTAUTH_SECRET is required. Copy `prototypes/ethan/frontend/.env.example` to `.env.local`, set NEXTAUTH_SECRET (e.g. openssl rand -base64 32), restart `npm run dev`.",
+    )
+}
+
+/**
  * NextAuth config.
  *
  * Current: mock Credentials provider so the UI can be built before backend auth exists.
@@ -9,6 +22,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
  * that validates against your DB) and return a real user id.
  */
 export const authOptions: NextAuthOptions = {
+    secret: resolveNextAuthSecret(),
     session: { strategy: "jwt" },
     pages: {
         signIn: "/auth/signin",
