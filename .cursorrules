@@ -14,8 +14,11 @@ suggestions consistent with the product vision, stack, and conventions below.
 - **Problem framing & HMW:** see `docs/problem-framing-canvas.md` for the
   problem we're actually solving, assumptions we're watching, and the
   "How Might We" statement that guides scope.
-- **User narrative:** see `docs/storyboard.md` for the 6-frame storyboard
-  that grounds UX decisions in a concrete founder journey.
+- **User narratives:** see `docs/storyboard_ethan.md` and `docs/storyboard_jason.md`
+  for teammate storyboards that ground UX decisions in concrete founder journeys.
+- **Consolidation & architecture notes:** see `architecture/architecture.md` for
+  how prototypes may merge (single-page Jason baseline, Ethan's tabs/sidebar/collapse ideas)
+  and high-level diagrams.
 
 **Rule:** when a suggestion touches product framing, user persona, or scope,
 *reference* these docs rather than restating them. If a change would contradict
@@ -30,115 +33,140 @@ One-line summary (for prompts only, not as a replacement):
 
 ## 2. Repo layout
 
+Application code lives under **`prototypes/`** (two parallel spikes). The repo
+root holds product docs, architecture notes, tooling config, and this file.
+
 ```
 .
-├── docs/                      # Product artifacts (vision, canvas, storyboard)
-├── email-dashboard/           # Next.js app (the product surface)
-│   ├── app/                   # App Router routes (inbox, onboarding, auth, api)
-│   ├── components/            # App-specific React components
-│   │   └── ui/                # shadcn/Radix primitives (button, card, accordion)
-│   ├── data/                  # Static mock data (emails.ts, tasks.ts) — temporary
-│   ├── lib/                   # auth.ts, utils.ts (cn() etc.)
-│   ├── types/                 # Shared TypeScript types (source of truth)
-│   ├── public/                # Static assets
-│   ├── AGENTS.md              # Next.js-version-specific warning for AI agents
-│   └── CLAUDE.md              # Re-exports AGENTS.md for Claude Code
-└── .cursor/skills/            # Product-thinking skills (storyboard, problem-framing, frontend-design)
+├── README.md
+├── architecture/                 # Consolidation plan, C4-style diagrams
+├── docs/                         # Vision, problem framing, storyboards
+├── prototypes/
+│   ├── ethan/
+│   │   ├── frontend/             # Next.js multi-page dashboard (inbox, onboarding, auth)
+│   │   │   ├── app/              # App Router routes, API route for next-auth
+│   │   │   ├── components/       # App UI + components/ui (shadcn-style)
+│   │   │   ├── data/             # Static fallbacks (emails.ts, tasks.ts)
+│   │   │   ├── lib/              # auth, utils, triage-api client
+│   │   │   ├── types/            # Shared TS types (Email, Task)
+│   │   │   ├── AGENTS.md         # Next 16.x warnings for agents
+│   │   │   └── CLAUDE.md         # Re-exports AGENTS.md
+│   │   └── backend/              # FastAPI + SQLite + SQLAlchemy (OpenAI triage)
+│   │       └── app/              # main, api/routes, models, services, seed
+│   └── jason/
+│       ├── frontend/             # Next.js triage board (SSE), Tailwind 3
+│       │   ├── app/
+│       │   ├── components/
+│       │   └── lib/              # api.ts, types.ts (mirror backend JSON)
+│       └── backend/              # FastAPI + LangGraph + Anthropic (mock inbox)
+│           └── app/              # main, api/routes, agent/graph, models, data
+└── .cursor/skills/               # storyboard, problem-framing, frontend-design, …
 ```
 
-All application code lives inside `email-dashboard/`. The repo root is for
-product docs, tooling config, and this file.
+**Which tree to edit:** follow the user's path or task — do not assume a single
+`email-dashboard/` root; that npm package name exists only inside Ethan's
+`frontend/package.json`.
 
 ---
 
-## 3. Stack
+## 3. Stack (depends on prototype — do not mix versions)
+
+### Ethan — `prototypes/ethan/frontend/`
 
 - **Framework:** Next.js **16.2.3** (App Router). React **19**.
-- **Language:** TypeScript, `strict: true`. Target ES2017.
-- **Styling:** Tailwind CSS **v4** (via `@tailwindcss/postcss`) + `tw-animate-css`.
-- **UI primitives:** shadcn/ui on top of Radix UI; `class-variance-authority`,
-  `clsx`, `tailwind-merge` (`cn()` lives in `lib/utils.ts`).
+- **Language:** TypeScript, `strict: true`.
+- **Styling:** Tailwind CSS **v4** (`@tailwindcss/postcss`) + `tw-animate-css`.
+- **UI:** shadcn/Radix-style primitives under `components/ui/`, `class-variance-authority`,
+  `clsx`, `tailwind-merge` (`cn()` in `lib/utils.ts`).
 - **Icons:** `lucide-react`.
-- **Auth:** `next-auth` v4 (see `lib/auth.ts`, `app/api/auth/...`,
-  `app/auth/signin/`).
-- **Path alias:** `@/*` resolves from `email-dashboard/` root
-  (e.g. `@/components/ui/card`, `@/types/email`).
+- **Auth:** `next-auth` v4 (`lib/auth.ts`, `app/api/auth/[...nextauth]/route.ts`).
+- **Path alias:** `@/*` from `prototypes/ethan/frontend/`.
 
-### Next.js 16 warning (IMPORTANT)
+### Ethan — `prototypes/ethan/backend/`
 
-From `email-dashboard/AGENTS.md`:
+- **Framework:** FastAPI, SQLAlchemy **2** (mapped models), SQLite via `app/database.py`.
+- **AI:** OpenAI-backed triage in `app/services/openai_triage.py` (see routes for HTTP contract).
+
+### Jason — `prototypes/jason/frontend/`
+
+- **Framework:** Next.js **15.x** (not the same major as Ethan). React **19 RC** in `package.json` — verify locally before assuming stable React 19 APIs.
+- **Styling:** Tailwind **3.4**.
+- **Path alias:** `@/*` from `prototypes/jason/frontend/`.
+- **Integration:** `next.config.ts` rewrites `/api/*` to `NEXT_PUBLIC_API_BASE` (FastAPI).
+
+### Jason — `prototypes/jason/backend/`
+
+- **Framework:** FastAPI, Pydantic v2, **LangGraph** + **Anthropic** SDK (`app/agent/graph.py`).
+- **Data:** in-memory mock inbox `app/data/mock_inbox.py` (no SQLite in this spike).
+
+### Next.js 16 warning (Ethan frontend only)
+
+From `prototypes/ethan/frontend/AGENTS.md`:
 
 > This is NOT the Next.js you know. This version has breaking changes — APIs,
 > conventions, and file structure may all differ from your training data. Read
 > the relevant guide in `node_modules/next/dist/docs/` before writing any code.
-> Heed deprecation notices.
 
-**Before generating Next.js-specific code** (routing, server components,
-metadata, caching, dynamic APIs like `headers()`/`cookies()`/`params`,
-`next/image`, `next/link`, middleware, route handlers), check
-`email-dashboard/node_modules/next/dist/docs/` for the in-tree guide instead
-of relying on memory. Do not guess API shapes.
+**Before generating Next.js-specific code in Ethan's frontend**, check
+`prototypes/ethan/frontend/node_modules/next/dist/docs/` for the in-tree guide.
+Jason's app is on Next 15 — do not apply Ethan's Next 16 assumptions there.
 
 ---
 
-## 4. Coding conventions (as observed in the codebase — keep consistent)
+## 4. Coding conventions (match the prototype you touch)
 
-### TypeScript / JavaScript
-- **Indent:** 4 spaces.
-- **Semicolons:** no (follow existing files).
+### TypeScript / JavaScript (both frontends)
+
+- **Indent:** 4 spaces (as in existing pages and components).
+- **Semicolons:** none (follow existing files).
 - **Quotes:** double quotes for strings and JSX attributes.
-- **Exports:** named for types, default for page/component modules where it's
-  already the pattern (e.g. `export default function Home()` in `app/*/page.tsx`).
-- **Client vs server:** add `"use client"` at the top only when the component
-  actually needs it (state, effects, browser APIs, event handlers). Prefer
-  server components by default.
-- **Imports:** always use the `@/` alias for cross-directory imports. Group:
-  external → `@/` internal → relative.
+- **Exports:** named for types; default exports for `page.tsx` where already used.
+- **Client vs server:** add `"use client"` only when needed (state, effects, browser APIs).
+- **Imports:** use `@/` for internal imports. Group: external → `@/` → relative.
 
-### File and symbol naming
-- **Component files:** lowercase, single-word or compact concat — matches
-  existing files (`emailcard.tsx`, `formcontainer.tsx`, `resizablepanel.tsx`).
-  Do not introduce a new convention (PascalCase filenames, kebab-case) mid-repo.
-- **`components/ui/`:** shadcn-generated primitives — keep lowercase
-  (`button.tsx`, `card.tsx`, `accordion.tsx`). Regenerate via `shadcn` CLI
-  rather than hand-editing where possible.
-- **Types:** `PascalCase` (`Email`, `Task`); live in `types/` and are imported
-  via `@/types/...`.
-- **Routes:** App Router directories are lowercase (`inbox`, `onboarding`,
-  `auth/signin`). Page file is always `page.tsx`.
+### Ethan frontend — file naming
 
-### React / UI
-- Compose with Radix + shadcn primitives from `components/ui/` before adding
-  new dependencies.
-- Use `cn()` from `@/lib/utils` for conditional class merging.
-- Icons come from `lucide-react` — avoid adding a second icon library.
-- Match the existing visual system (Tailwind v4 design tokens in
-  `app/globals.css`); don't introduce ad-hoc colors or spacing scales.
+- **Component files:** lowercase / compact (`emailcard.tsx`, `formcontainer.tsx`) —
+  do not introduce PascalCase or kebab-case filenames mid-tree.
+- **`components/ui/`:** treat as generated-style primitives; prefer shadcn CLI for adds.
+- **Types:** `PascalCase` in `types/` (e.g. `types/email.ts`).
 
-### Comments
-- Only write comments that explain **intent, constraint, or trade-off** —
-  never narrate what code does. Follow the style already in
-  `app/inbox/page.tsx` and `types/email.ts` (block comments explaining the
-  mock-to-API migration path, JSDoc on shared types).
+### Jason frontend / backends
+
+- Follow existing file naming in that tree (e.g. Jason `components/TriageCard.tsx` uses PascalCase —
+  match the directory you are in).
+- **Python:** match surrounding modules (FastAPI routers, Pydantic models, type hints).
+
+### React / UI (Ethan)
+
+- Compose with Radix + `components/ui/` before new dependencies.
+- Use `cn()` from `@/lib/utils` where the file already does.
+- Align with Tailwind tokens in `app/globals.css`; avoid one-off palette drift.
 
 ---
 
-## 5. Data model & backend contract
+## 5. Data model & API contracts
 
-- **Source of truth:** `email-dashboard/types/email.ts` defines `Email` and
-  `Task`. When adding fields, extend these types first — the UI and (future)
-  API must agree on shapes here.
-- **Today:** `data/emails.ts` and `data/tasks.ts` are static mocks consumed
-  directly by client components.
-- **Planned:** swap mocks for API routes under `app/api/` (e.g.
-  `GET /api/emails`, `GET /api/tasks`, `PATCH /api/tasks/:id`,
-  `GET /api/insights/weekly`). The migration plan is documented inline at the
-  top of `app/inbox/page.tsx` — **preserve that plan**; don't break the
-  mock/API shape parity.
-- **Dates:** task `dueDate` is `YYYY-MM-DD` so lexicographic sort equals
-  chronological sort. Keep it that way.
-- **Priority:** `"High" | "Medium" | "Low"` union — extend the union in
-  `types/email.ts` rather than stringly typing new values inline.
+### Ethan
+
+- **Browser types:** `prototypes/ethan/frontend/types/email.ts` (`Email`, `Task`, etc.).
+- **HTTP client / fallbacks:** `prototypes/ethan/frontend/lib/triage-api.ts`; static
+  fallbacks in `data/emails.ts`, `data/tasks.ts`.
+- **Backend persistence:** SQLAlchemy models in `prototypes/ethan/backend/app/models.py`
+  (`EmailRow`, `TaskRow`, …) — keep API JSON aligned with what the frontend expects.
+- **Migration / API plan:** the block comment at the top of
+  `prototypes/ethan/frontend/app/inbox/page.tsx` documents live API vs mock fallback —
+  preserve that intent when changing shapes.
+- **Dates:** task `dueDate` / `due_date` as `YYYY-MM-DD` string where documented.
+
+### Jason
+
+- **API schema (source of truth):** Pydantic in
+  `prototypes/jason/backend/app/models/email.py` plus request models in
+  `prototypes/jason/backend/app/api/routes.py` (`ContextPayload`, `TriagePayload`).
+- **Frontend mirror:** `prototypes/jason/frontend/lib/types.ts` should stay consistent
+  with JSON from `/api/*` and SSE `stage` patches.
+- **OpenAPI:** served at backend `/docs` when Uvicorn is running.
 
 ---
 
@@ -163,35 +191,53 @@ From `docs/problem-framing-canvas.md`:
 
 ## 7. When suggesting code
 
-1. **Read before writing.** If the change touches Next.js APIs, consult
-   `email-dashboard/node_modules/next/dist/docs/`. If it touches product
-   scope, consult `docs/`.
-2. **Respect the mock → API migration path.** Don't hardcode to mocks in a
-   way that will force a rewrite when the backend lands. Don't invent an API
-   surface without updating `types/` and the inline plan in
-   `app/inbox/page.tsx`.
-3. **Stay inside the existing stack.** Prefer Radix/shadcn + Tailwind + the
-   current utilities over new dependencies. If a new dep is genuinely needed,
-   call it out explicitly with justification.
-4. **Match style, not your defaults.** 4-space indent, no semicolons, double
-   quotes, lowercase component filenames, `@/` imports.
-5. **Keep secrets out.** `next-auth` config reads from env vars — never inline
-   credentials, API keys, or OAuth client secrets.
-6. **Ask when ambiguous.** If a request conflicts with the vision, the HMW,
-   or the storyboard, surface the conflict rather than silently choosing.
+1. **Read before writing.** Confirm **which prototype** (Ethan vs Jason) and
+   **which layer** (frontend vs backend). For Ethan's Next app, consult
+   `node_modules/next/dist/docs/` as above.
+2. **Respect API / mock boundaries.** Ethan inbox supports API + mock fallback;
+   Jason uses mock data in-process until real integrations land — do not
+   silently assume Postgres or Gmail where the spike does not.
+3. **Stay inside the existing stack** for that folder (e.g. don't add Redux to
+   Jason if the tree uses local state only). New dependencies need explicit
+   justification.
+4. **Match local style** (indent, quotes, filename conventions for that subtree).
+5. **Keep secrets out.** OAuth and API keys via env only (see each prototype's
+   `.env.example`).
+6. **Ask when ambiguous.** If a request conflicts with vision, HMW, or
+   `architecture/architecture.md`, surface it.
 
 ---
 
 ## 8. Useful commands
 
-Run from `email-dashboard/`:
+**Ethan frontend** (`prototypes/ethan/frontend/`):
 
 ```bash
-npm run dev      # Next dev server
-npm run build    # Production build
-npm run start    # Start production server
-npm run lint     # ESLint (eslint-config-next)
+npm run dev
+npm run build
+npm run start
+npm run lint
 ```
 
-There is no test runner wired up yet — if you add one, update this section and
-the root `README.md`.
+**Ethan backend** (`prototypes/ethan/backend/` — use venv as in that README):
+
+```bash
+uvicorn app.main:app --reload   # typical; port from README or .env
+```
+
+**Jason frontend** (`prototypes/jason/frontend/`):
+
+```bash
+npm run dev
+npm run build
+npm run lint
+```
+
+**Jason backend** (`prototypes/jason/backend/`):
+
+```bash
+uvicorn app.main:app --reload --port 8000   # typical; see prototype README
+```
+
+There is no shared root test runner yet — if you add one, update this section
+and the root `README.md`.
