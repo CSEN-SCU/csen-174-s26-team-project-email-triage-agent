@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import EmailRow, TaskRow
 from app.schemas import EmailOut, TaskOut, TaskPatch
-from app.services.openai_triage import triage_with_openai
+from app.services.hf_triage import triage_with_hf
 
 router = APIRouter()
 
@@ -35,7 +35,7 @@ def analyze_email(email_id: str, db: Session = Depends(get_db)) -> EmailRow:
     if not row:
         raise HTTPException(status_code=404, detail="email not found")
     try:
-        triage = triage_with_openai(
+        triage = triage_with_hf(
             subject=row.subject,
             sender=row.sender,
             sender_email=row.sender_email,

@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./ethan_triage.db"
     cors_origins: str = "http://localhost:3000"
     openai_api_key: str = ""
+    hf_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
     @property
