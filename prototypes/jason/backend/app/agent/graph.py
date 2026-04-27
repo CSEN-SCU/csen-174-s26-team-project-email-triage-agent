@@ -12,10 +12,14 @@ when the email is action-worthy (bucket = act_today or intent requires reply).
 from __future__ import annotations
 
 import json
+import logging
+import time
 from typing import TypedDict
 
 from anthropic import Anthropic
 from langgraph.graph import END, StateGraph
+
+logger = logging.getLogger("triage.graph")
 
 from app.agent.prompts import (
     ACTIONS_PROMPT,
@@ -61,13 +65,33 @@ def _anthropic() -> Anthropic:
 
 
 def _call(model: str, prompt: str, max_tokens: int = 1024) -> str:
+    logger.info(
+        "  └─ anthropic.messages.create model=%s prompt_chars=%d max_tokens=%d",
+        model,
+        len(prompt),
+        max_tokens,
+    )
+    t0 = time.perf_counter()
     msg = _anthropic().messages.create(
         model=model,
         max_tokens=max_tokens,
         system=SYSTEM_PREAMBLE,
         messages=[{"role": "user", "content": prompt}],
     )
-    return "".join(block.text for block in msg.content if block.type == "text").strip()
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+    text = "".join(block.text for block in msg.content if block.type == "text").strip()
+    usage = getattr(msg, "usage", None)
+    if usage is not None:
+        logger.info(
+            "     ↳ ok in %.0fms · in=%s out=%s · response_chars=%d",
+            elapsed_ms,
+            getattr(usage, "input_tokens", "?"),
+            getattr(usage, "output_tokens", "?"),
+            len(text),
+        )
+    else:
+        logger.info("     ↳ ok in %.0fms · response_chars=%d", elapsed_ms, len(text))
+    return text
 
 
 def _extract_json(text: str) -> str:
@@ -89,6 +113,7 @@ def _extract_json(text: str) -> str:
 
 def classify_node(state: TriageState) -> TriageState:
     email = state["email"]
+    logger.info("[node: classify] email=%s subject=%r", email.id, email.subject)
     prompt = CLASSIFY_PROMPT.format(
         user_context=state["user_context"],
         sender_name=email.sender_name,
@@ -105,18 +130,24 @@ def classify_node(state: TriageState) -> TriageState:
         if priority >= 80
         else "decide_this_week" if priority >= 40 else "fyi"
     )
-    return {
-        "signal": TriageSignal(
-            intent=Intent(data["intent"]),
-            priority=priority,
-            bucket=Bucket(bucket_str),
-            reason=data["reason"],
-        )
-    }
+    signal = TriageSignal(
+        intent=Intent(data["intent"]),
+        priority=priority,
+        bucket=Bucket(bucket_str),
+        reason=data["reason"],
+    )
+    logger.info(
+        "  → signal intent=%s priority=%d bucket=%s",
+        signal.intent.value,
+        signal.priority,
+        signal.bucket.value,
+    )
+    return {"signal": signal}
 
 
 def summarize_node(state: TriageState) -> TriageState:
     email = state["email"]
+    logger.info("[node: summarize] email=%s", email.id)
     summary = _call(
         settings.triage_model,
         SUMMARIZE_PROMPT.format(
@@ -127,12 +158,14 @@ def summarize_node(state: TriageState) -> TriageState:
         ),
         max_tokens=200,
     )
+    logger.info("  → summary (%d chars)", len(summary))
     return {"summary": summary}
 
 
 def actions_node(state: TriageState) -> TriageState:
     email = state["email"]
     signal = state["signal"]
+    logger.info("[node: actions] email=%s", email.id)
     prompt = ACTIONS_PROMPT.format(
         user_context=state["user_context"],
         sender_name=email.sender_name,
@@ -144,11 +177,14 @@ def actions_node(state: TriageState) -> TriageState:
     )
     raw = _call(settings.triage_model, prompt, max_tokens=400)
     items = json.loads(_extract_json(raw))
-    return {"actions": [ActionItem(**item) for item in items]}
+    actions = [ActionItem(**item) for item in items]
+    logger.info("  → extracted %d action item(s)", len(actions))
+    return {"actions": actions}
 
 
 def draft_reply_node(state: TriageState) -> TriageState:
     email = state["email"]
+    logger.info("[node: draft] email=%s — generating reply", email.id)
     draft = _call(
         settings.triage_model,
         DRAFT_REPLY_PROMPT.format(
@@ -160,23 +196,34 @@ def draft_reply_node(state: TriageState) -> TriageState:
         ),
         max_tokens=600,
     )
+    logger.info("  → draft ready (%d chars)", len(draft))
     return {"draft_reply": draft}
 
 
 def skip_draft_node(state: TriageState) -> TriageState:
+    logger.info("[node: skip_draft] email=%s — no draft generated", state["email"].id)
     return {"draft_reply": None}
 
 
 def _should_draft(state: TriageState) -> str:
     signal = state["signal"]
     if signal.bucket == Bucket.FYI:
-        return "skip"
-    if signal.intent in {Intent.COLD_OUTREACH, Intent.VENDOR, Intent.RECRUITING}:
-        return "skip"
-    return "draft"
+        decision = "skip"
+        reason = "bucket=fyi"
+    elif signal.intent in {Intent.COLD_OUTREACH, Intent.VENDOR, Intent.RECRUITING}:
+        decision = "skip"
+        reason = f"intent={signal.intent.value}"
+    else:
+        decision = "draft"
+        reason = f"bucket={signal.bucket.value} intent={signal.intent.value}"
+    logger.info("[router: should_draft] → %s (%s)", decision, reason)
+    return decision
 
 
 def build_graph():
+    logger.info(
+        "Building LangGraph: classify → summarize → actions → {draft|skip} → END"
+    )
     g = StateGraph(TriageState)
     g.add_node("classify_node", classify_node)
     g.add_node("summarize_node", summarize_node)
@@ -210,10 +257,27 @@ def get_graph():
 
 def triage_email(email: Email, user_context: str) -> TriageResult:
     graph = get_graph()
+    logger.info(
+        "═══ triage_email start · id=%s from=%s subject=%r",
+        email.id,
+        email.sender_email,
+        email.subject,
+    )
+    t0 = time.perf_counter()
     final = graph.invoke({"email": email, "user_context": user_context})
+    elapsed = time.perf_counter() - t0
+    signal = final["signal"]
+    logger.info(
+        "═══ triage_email done · id=%s in %.2fs · bucket=%s priority=%d draft=%s",
+        email.id,
+        elapsed,
+        signal.bucket.value,
+        signal.priority,
+        "yes" if final.get("draft_reply") else "no",
+    )
     return TriageResult(
         email_id=email.id,
-        signal=final["signal"],
+        signal=signal,
         summary=final["summary"],
         actions=final["actions"],
         draft_reply=final.get("draft_reply"),
