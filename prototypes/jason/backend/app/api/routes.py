@@ -9,7 +9,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.agent.graph import get_graph, triage_email
-from app.data.mock_inbox import DEFAULT_USER_CONTEXT, MOCK_EMAILS
+from app.data.mock_inbox import DEFAULT_USER_CONTEXT
+from app.inbox_repository import (
+    UnknownEmailIdsError,
+    all_emails_default_order,
+    get_email,
+    get_emails_by_ids,
+    list_emails as list_emails_repo,
+)
 from app.models.email import Bucket, Email, TriageDigest, TriageResult
 
 router = APIRouter()
@@ -33,16 +40,16 @@ def health() -> dict[str, str]:
 
 
 @router.get("/emails", response_model=list[Email])
-def list_emails() -> list[Email]:
-    return sorted(MOCK_EMAILS, key=lambda e: e.received_at, reverse=True)
+async def list_emails() -> list[Email]:
+    return await list_emails_repo()
 
 
 @router.get("/emails/{email_id}", response_model=Email)
-def get_email(email_id: str) -> Email:
-    for email in MOCK_EMAILS:
-        if email.id == email_id:
-            return email
-    raise HTTPException(status_code=404, detail="email not found")
+async def get_email_by_id(email_id: str) -> Email:
+    email = await get_email(email_id)
+    if email is None:
+        raise HTTPException(status_code=404, detail="email not found")
+    return email
 
 
 @router.get("/context")
@@ -57,14 +64,16 @@ def set_context(payload: ContextPayload) -> dict[str, str]:
     return {"user_context": _user_context}
 
 
-def _select_emails(ids: list[str] | None) -> list[Email]:
+async def _select_emails(ids: list[str] | None) -> list[Email]:
     if not ids:
-        return list(MOCK_EMAILS)
-    by_id = {e.id: e for e in MOCK_EMAILS}
-    missing = [i for i in ids if i not in by_id]
-    if missing:
-        raise HTTPException(status_code=404, detail=f"unknown email ids: {missing}")
-    return [by_id[i] for i in ids]
+        return await all_emails_default_order()
+    try:
+        return await get_emails_by_ids(ids)
+    except UnknownEmailIdsError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=f"unknown email ids: {exc.missing}",
+        ) from exc
 
 
 def _bucket_results(results: list[TriageResult]) -> TriageDigest:
@@ -87,7 +96,7 @@ async def triage(payload: TriagePayload) -> TriageDigest:
     global _user_context
     if payload.user_context:
         _user_context = payload.user_context
-    emails = _select_emails(payload.email_ids)
+    emails = await _select_emails(payload.email_ids)
     loop = asyncio.get_running_loop()
     with ThreadPoolExecutor(max_workers=min(8, len(emails) or 1)) as pool:
         results = await asyncio.gather(
@@ -138,7 +147,7 @@ async def triage_stream(payload: TriagePayload):
     global _user_context
     if payload.user_context:
         _user_context = payload.user_context
-    emails = _select_emails(payload.email_ids)
+    emails = await _select_emails(payload.email_ids)
     context = _user_context
 
     async def event_source():
