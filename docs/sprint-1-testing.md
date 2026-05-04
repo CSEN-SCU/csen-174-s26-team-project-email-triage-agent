@@ -64,7 +64,7 @@ What helped us the most was the idea that tests should describe behavior people 
 
 After we loaded it in Cursor, we started naming tests a bit more like our product language (inbox, triage, buckets). For anything that hits the network we still lean on integration-style checks when we can. We don’t always have API keys or Docker Postgres running, so some tests stay skipped on our laptops, and that’s fine for now.
 
-# Part 4 — Reviewing two AI-generated unit tests
+# Part 4
 
 For this part we looked at two tests Cursor helped us write in `consolidated_project/frontend/test/triage-helpers.test.ts` (same file as the small helper tests from earlier in the sprint). Below: does each test describe something a user actually needs, would it break if we refactored without changing behavior, and what cases did we forget?
 
