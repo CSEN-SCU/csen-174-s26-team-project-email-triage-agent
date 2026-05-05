@@ -1,0 +1,67 @@
+name: CI Frontend
+
+
+on:
+    push:   
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        defaults:
+            run: 
+                working-directory: consolidated_project/frontend
+        steps:
+            - name: checkout code
+              uses: actions/checkout@v4
+              with:
+                sparse-checkout: consolidated_project/frontend
+                sparse-checkout-cone-mode: true 
+            
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                    node-version: '20'
+                    cache: 'npm'
+                    cache-dependency-path: consolidated_project/frontend/package-lock.json
+            
+            - name: Cache dependencies and build
+              uses: actions/cache@v4
+              with:
+                    path: consolidated_project/frontend/.next/cache
+                    key: ${{ runner.os }}-nextjs-${{ hashFiles('consolidated_project/frontend/package-lock.json') }}-${{ hashFiles('consolidated_project/frontend/**/*.{ts,tsx,js,jsx}') }}
+                    restore-keys: |
+                        ${{ runner.os }}-nextjs-${{ hashFiles('consolidated_project/frontend/package-lock.json') }}-
+
+            - name: Install dependencies
+              run: npm ci
+            
+            - name: Build project
+              run: npm build
+    test:
+        needs: [build]
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: consolidated_project/frontend
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  sparse-checkout: consolidated_project/frontend
+                  sparse-checkout-cone-mode: true
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: npm
+                  cache-dependency-path: consolidated_project/frontend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run tests
+              run: npm test
