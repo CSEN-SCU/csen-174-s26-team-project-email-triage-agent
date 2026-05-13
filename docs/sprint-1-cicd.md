@@ -8,7 +8,7 @@ We do not store or inject secrets through GitHub Actions: our `.github/workflows
 
 # Live Deployment Link
 
-_(Public frontend URL, e.g. `https://….vercel.app` or custom domain.)_
+https://csen-174-s26-team-project-email-tri.vercel.app/
 
 # Deployment Dashboard
 ![Deploy dashboard](./deploy.png)
