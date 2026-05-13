@@ -6,10 +6,10 @@ import type { Email, PartialTriageResult, Stage } from "@/lib/types";
 type Accent = "act" | "decide" | "fyi";
 
 const INTENT_LABEL: Record<string, string> = {
-  investor: "Investor",
+  prospect: "Prospect",
+  deal: "Deal",
   customer: "Customer",
   partnership: "Partnership",
-  recruiting: "Recruiting",
   vendor: "Vendor",
   internal: "Internal",
   cold_outreach: "Cold outreach",

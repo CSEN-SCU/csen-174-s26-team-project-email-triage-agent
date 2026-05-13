@@ -19,9 +19,9 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Triage — an email agent that knows what you're working on",
+  title: "Sales Triage — an email agent that knows your pipeline",
   description:
-    "Built for founders. Adapts to your fundraise, customers, and deadlines instead of summarizing everything the same way.",
+    "Built for B2B sellers. Adapts to your deals, accounts, and quota instead of summarizing every email the same way.",
 };
 
 export default function RootLayout({

@@ -15,7 +15,7 @@ export function Nav() {
             Triage
           </span>
           <span className="ml-2 text-[11px] uppercase tracking-eyebrow text-muted hidden sm:inline">
-            for founders
+            for sales
           </span>
         </a>
         <AuthChip />

@@ -12,10 +12,10 @@ class Bucket(str, Enum):
 
 
 class Intent(str, Enum):
-    INVESTOR = "investor"
+    PROSPECT = "prospect"
+    DEAL = "deal"
     CUSTOMER = "customer"
     PARTNERSHIP = "partnership"
-    RECRUITING = "recruiting"
     VENDOR = "vendor"
     INTERNAL = "internal"
     COLD_OUTREACH = "cold_outreach"

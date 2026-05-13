@@ -1,10 +1,10 @@
 export type Bucket = "act_today" | "decide_this_week" | "fyi";
 
 export type Intent =
-  | "investor"
+  | "prospect"
+  | "deal"
   | "customer"
   | "partnership"
-  | "recruiting"
   | "vendor"
   | "internal"
   | "cold_outreach"

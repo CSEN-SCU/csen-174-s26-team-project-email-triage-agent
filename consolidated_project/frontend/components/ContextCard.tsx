@@ -44,7 +44,7 @@ export function ContextCard({ onSaved }: { onSaved?: (ctx: string) => void }) {
 
       <textarea
         className="w-full min-h-[120px] mt-4 border border-line rounded-xl p-3.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-accent/40 bg-paper-deep/40 placeholder:text-muted/70"
-        placeholder="e.g. Raising a seed extension, piloting with Acme and PilotCo, hiring a founding engineer."
+        placeholder="e.g. AE selling a Series B observability platform. ICP: 200-2k eng orgs. Top Q4 deals: Acme (POC), Globex (procurement), Initech (renewal + expansion)."
         value={value}
         onChange={(e) => setValue(e.target.value)}
         disabled={!loaded}

@@ -210,7 +210,7 @@ def _should_draft(state: TriageState) -> str:
     if signal.bucket == Bucket.FYI:
         decision = "skip"
         reason = "bucket=fyi"
-    elif signal.intent in {Intent.COLD_OUTREACH, Intent.VENDOR, Intent.RECRUITING}:
+    elif signal.intent in {Intent.COLD_OUTREACH, Intent.VENDOR}:
         decision = "skip"
         reason = f"intent={signal.intent.value}"
     else:
