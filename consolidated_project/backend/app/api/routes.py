@@ -1,14 +1,17 @@
 import asyncio
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.agent.graph import get_graph, triage_email
+from app.auth.deps import gmail_access_token
+from app.auth.gmail import GmailFetchError, fetch_emails_by_ids, fetch_inbox
 from app.data.mock_inbox import DEFAULT_USER_CONTEXT
 from app.inbox_repository import (
     UnknownEmailIdsError,
@@ -20,6 +23,7 @@ from app.inbox_repository import (
 from app.models.email import Bucket, Email, TriageDigest, TriageResult
 
 router = APIRouter()
+logger = logging.getLogger("triage.routes")
 
 
 class ContextPayload(BaseModel):
@@ -39,13 +43,37 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@router.get("/auth/status")
+def auth_status(token: str | None = Depends(gmail_access_token)) -> dict[str, bool]:
+    """Cheap probe used by the frontend to verify the Bearer token reached the
+    backend (i.e. the NextAuth proxy is wired and the user is signed in)."""
+    return {"authenticated": token is not None}
+
+
 @router.get("/emails", response_model=list[Email])
-async def list_emails() -> list[Email]:
+async def list_emails(
+    token: str | None = Depends(gmail_access_token),
+) -> list[Email]:
+    if token:
+        try:
+            return await fetch_inbox(token)
+        except GmailFetchError as exc:
+            logger.warning("gmail fetch failed; serving mock inbox: %s", exc)
     return await list_emails_repo()
 
 
 @router.get("/emails/{email_id}", response_model=Email)
-async def get_email_by_id(email_id: str) -> Email:
+async def get_email_by_id(
+    email_id: str,
+    token: str | None = Depends(gmail_access_token),
+) -> Email:
+    if token:
+        try:
+            emails = await fetch_emails_by_ids(token, [email_id])
+            if emails:
+                return emails[0]
+        except GmailFetchError as exc:
+            logger.warning("gmail get failed; falling back to mock: %s", exc)
     email = await get_email(email_id)
     if email is None:
         raise HTTPException(status_code=404, detail="email not found")
@@ -64,7 +92,31 @@ def set_context(payload: ContextPayload) -> dict[str, str]:
     return {"user_context": _user_context}
 
 
-async def _select_emails(ids: list[str] | None) -> list[Email]:
+async def _select_emails(
+    ids: list[str] | None,
+    token: str | None,
+) -> list[Email]:
+    if token:
+        try:
+            inbox = await fetch_inbox(token)
+        except GmailFetchError as exc:
+            raise HTTPException(status_code=502, detail=f"gmail fetch failed: {exc}") from exc
+        if not ids:
+            return inbox
+        by_id = {e.id: e for e in inbox}
+        missing = [i for i in ids if i not in by_id]
+        if missing:
+            try:
+                extras = await fetch_emails_by_ids(token, missing)
+            except GmailFetchError as exc:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"unknown gmail message ids: {missing}",
+                ) from exc
+            for e in extras:
+                by_id[e.id] = e
+        return [by_id[i] for i in ids if i in by_id]
+
     if not ids:
         return await all_emails_default_order()
     try:
@@ -92,11 +144,14 @@ def _bucket_results(results: list[TriageResult]) -> TriageDigest:
 
 
 @router.post("/triage", response_model=TriageDigest)
-async def triage(payload: TriagePayload) -> TriageDigest:
+async def triage(
+    payload: TriagePayload,
+    token: str | None = Depends(gmail_access_token),
+) -> TriageDigest:
     global _user_context
     if payload.user_context:
         _user_context = payload.user_context
-    emails = await _select_emails(payload.email_ids)
+    emails = await _select_emails(payload.email_ids, token)
     loop = asyncio.get_running_loop()
     with ThreadPoolExecutor(max_workers=min(8, len(emails) or 1)) as pool:
         results = await asyncio.gather(
@@ -134,7 +189,10 @@ def _serialize_patch(patch: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.post("/triage/stream")
-async def triage_stream(payload: TriagePayload):
+async def triage_stream(
+    payload: TriagePayload,
+    token: str | None = Depends(gmail_access_token),
+):
     """SSE: emit per-stage updates as each LangGraph node completes per email.
 
     Events:
@@ -147,7 +205,7 @@ async def triage_stream(payload: TriagePayload):
     global _user_context
     if payload.user_context:
         _user_context = payload.user_context
-    emails = await _select_emails(payload.email_ids)
+    emails = await _select_emails(payload.email_ids, token)
     context = _user_context
 
     async def event_source():

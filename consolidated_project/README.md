@@ -48,11 +48,49 @@ finishes going through the LangGraph agent.
 - `backend/app/agent/prompts.py` — every prompt injects the user's context blurb; this is the anti-Gemini differentiator.
 - `backend/app/data/mock_inbox.py` — 11 seeded emails modeled on the Maya storyboard (including the buried-11-days Bessemer thread from Frame 3).
 - `backend/app/api/routes.py` — `/emails`, `/context`, `/triage`, `/triage/stream` (SSE).
-- `frontend/app/page.tsx` — three-card dashboard; streams results over SSE.
+- `backend/app/auth/gmail.py` — Gmail client. Accepts the access token forwarded by the Next.js proxy and returns `Email` models.
+- `backend/app/auth/deps.py` — FastAPI dep that pulls the Bearer token out of the `Authorization` header.
+- `frontend/auth.ts` — NextAuth v5 config (Google provider, `gmail.readonly` scope, refresh-token flow in the `jwt` callback).
+- `frontend/app/api/[...path]/route.ts` — Next.js App Router proxy. Reads the NextAuth session, injects `Authorization: Bearer <google_access_token>` and forwards every `/api/*` call to FastAPI (streaming-safe for SSE).
+- `frontend/app/page.tsx` — three-bucket dashboard; streams results over SSE.
 
-## What's intentionally out of scope for this pass
+## Gmail OAuth (NextAuth v5)
 
-- Real Gmail OAuth (the inbox is mocked; swap `MOCK_EMAILS` for a Gmail client later).
-- Persistent storage (user context is in-process; fine for a demo, replace with Postgres or SQLite).
-- Auth / multi-user.
-- Per-email "send" action (draft is shown read-only; wiring Gmail send is a one-endpoint addition once OAuth is in).
+Auth lives on the frontend; the backend just consumes whatever access token
+the proxy hands it. When no token is present, FastAPI falls back to the mock
+inbox so the demo works without credentials.
+
+### 1. Create a Google OAuth client
+
+1. Open the [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials).
+2. **Configure an OAuth consent screen** (External, testing mode is fine). Add yourself as a test user.
+3. **Enable the Gmail API** at *APIs & Services → Library*.
+4. **Create credentials → OAuth client ID → Web application.**
+5. Authorized redirect URI: `http://localhost:3000/api/auth/callback/google` (exact match).
+6. Copy the client ID + secret.
+
+### 2. Configure the frontend
+
+```bash
+cd frontend
+cp .env.example .env.local
+# fill AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_SECRET (`openssl rand -base64 32`)
+npm install                # installs next-auth v5
+npm run dev
+```
+
+Click **Connect Gmail** in the nav. After consent, the chip flips to your
+avatar/email and the page reloads with your live inbox.
+
+### How the token flows end-to-end
+
+1. NextAuth handles the OAuth dance and stores `{access_token, refresh_token, expires_at}` in an encrypted JWT cookie.
+2. The `jwt` callback refreshes the access token automatically when within 60s of expiry.
+3. Every `fetch("/api/...")` hits `app/api/[...path]/route.ts`. It calls `auth()`, reads `session.accessToken`, sets `Authorization: Bearer <token>` and proxies to `BACKEND_URL`.
+4. FastAPI's `gmail_access_token` dep picks the Bearer up; when present the routes hit the Gmail API, otherwise they serve the mock inbox.
+
+### What's still out of scope for this pass
+
+- Per-email "send" action (drafts are read-only; would need `gmail.send` scope + endpoint).
+- Persistent storage of the user-context blurb (still in-process).
+- Multi-user state (per-session context, agent caches).

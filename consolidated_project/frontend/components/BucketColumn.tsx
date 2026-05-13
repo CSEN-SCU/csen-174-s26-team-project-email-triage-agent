@@ -3,6 +3,17 @@
 import type { Email, PartialTriageResult } from "@/lib/types";
 import { TriageCard } from "./TriageCard";
 
+type Accent = "act" | "decide" | "fyi";
+
+const ACCENT_STYLES: Record<
+  Accent,
+  { tone: string; dot: string; eyebrow: string }
+> = {
+  act: { tone: "text-accent", dot: "bg-accent", eyebrow: "text-accent" },
+  decide: { tone: "text-decide", dot: "bg-decide", eyebrow: "text-decide" },
+  fyi: { tone: "text-fyi", dot: "bg-fyi", eyebrow: "text-fyi" },
+};
+
 export function BucketColumn({
   title,
   subtitle,
@@ -10,43 +21,59 @@ export function BucketColumn({
   results,
   emails,
   empty,
+  eyebrow,
 }: {
   title: string;
   subtitle: string;
-  accent: "act" | "decide" | "fyi";
+  accent: Accent;
   results: PartialTriageResult[];
   emails: Record<string, Email>;
   empty: string;
+  eyebrow: string;
 }) {
-  const ring =
-    accent === "act"
-      ? "border-accent/50"
-      : accent === "decide"
-      ? "border-yellow-500/40"
-      : "border-line";
-  const dot =
-    accent === "act" ? "bg-accent" : accent === "decide" ? "bg-yellow-500" : "bg-muted/60";
+  const styles = ACCENT_STYLES[accent];
 
   return (
-    <div className={`flex flex-col gap-3 p-4 rounded-2xl border-2 border-dashed ${ring} bg-white/40`}>
-      <div>
+    <section className={`bucket card-edge ${styles.tone}`}>
+      <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">
-          <span className={`inline-block w-2.5 h-2.5 rounded-full ${dot}`} />
-          <h2 className="font-serif text-xl">{title}</h2>
-          <span className="text-sm text-muted ml-auto">{results.length}</span>
+          <span
+            className={`inline-block w-2 h-2 rounded-full ${styles.dot}`}
+            aria-hidden
+          />
+          <p
+            className={`text-[11px] uppercase tracking-eyebrow ${styles.eyebrow}`}
+          >
+            {eyebrow}
+          </p>
+          <span className="ml-auto text-xs text-muted tabular-nums">
+            {results.length}
+          </span>
         </div>
-        <p className="text-xs text-muted mt-1">{subtitle}</p>
+        <h2 className="font-serif text-2xl mt-1 text-ink leading-tight">
+          {title}
+        </h2>
+        <p className="text-sm text-muted mt-1">{subtitle}</p>
       </div>
 
-      {results.length === 0 ? (
-        <div className="text-sm text-muted italic py-8 text-center">{empty}</div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {results.map((r) => (
-            <TriageCard key={r.email_id} result={r} email={emails[r.email_id]} />
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="px-5 pb-5">
+        {results.length === 0 ? (
+          <div className="border border-dashed border-line rounded-xl py-8 text-center text-sm text-muted italic">
+            {empty}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 stagger">
+            {results.map((r) => (
+              <TriageCard
+                key={r.email_id}
+                result={r}
+                email={emails[r.email_id]}
+                accent={accent}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

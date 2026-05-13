@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { BucketColumn } from "@/components/BucketColumn";
 import { ContextCard } from "@/components/ContextCard";
+import { SignInGate } from "@/components/SignInGate";
 import { api } from "@/lib/api";
 import type {
   Bucket,
@@ -14,17 +16,26 @@ import type {
 const STAGE_ORDER: Stage[] = ["classify", "summarize", "actions", "draft"];
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const authed = !!session?.user;
+
   const [emails, setEmails] = useState<Email[]>([]);
-  const [results, setResults] = useState<Record<string, PartialTriageResult>>(
-    {}
-  );
+  const [emailsLoading, setEmailsLoading] = useState(false);
+  const [results, setResults] = useState<Record<string, PartialTriageResult>>({});
   const [running, setRunning] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.listEmails().then(setEmails).catch((e) => setError(String(e)));
-  }, []);
+    if (status === "loading") return;
+    setEmailsLoading(true);
+    setResults({});
+    api
+      .listEmails()
+      .then((list) => setEmails(list))
+      .catch((e) => setError(String(e)))
+      .finally(() => setEmailsLoading(false));
+  }, [status, authed]);
 
   const emailsById = useMemo(() => {
     const m: Record<string, Email> = {};
@@ -32,8 +43,6 @@ export default function Home() {
     return m;
   }, [emails]);
 
-  // Only emails that have made it to classify are bucketable; the rest stay
-  // in a "pending" lane until classify lands.
   const byBucket = useMemo(() => {
     const groups: Record<Bucket, PartialTriageResult[]> = {
       act_today: [],
@@ -44,14 +53,14 @@ export default function Home() {
       if (r.signal) groups[r.signal.bucket].push(r);
     }
     for (const k of Object.keys(groups) as Bucket[]) {
-      groups[k].sort((a, b) => (b.signal!.priority) - (a.signal!.priority));
+      groups[k].sort((a, b) => b.signal!.priority - a.signal!.priority);
     }
     return groups;
   }, [results]);
 
   const pending = useMemo(
     () => Object.values(results).filter((r) => !r.signal && !r.done && !r.error),
-    [results]
+    [results],
   );
 
   async function runTriage() {
@@ -74,7 +83,10 @@ export default function Home() {
         onEmailDone: (emailId) =>
           setResults((prev) => ({
             ...prev,
-            [emailId]: { ...(prev[emailId] ?? { email_id: emailId }), done: true },
+            [emailId]: {
+              ...(prev[emailId] ?? { email_id: emailId }),
+              done: true,
+            },
           })),
         onError: (emailId, message) =>
           setResults((prev) => ({
@@ -94,80 +106,138 @@ export default function Home() {
   }
 
   const done = Object.values(results).filter((r) => r.done).length;
+  const sourceLabel = authed
+    ? `Gmail · ${session?.user?.email ?? "connected"}`
+    : "Demo · seeded founder inbox";
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-10">
-      <header className="flex items-end justify-between mb-8">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">Email Triage Agent</p>
-          <h1 className="font-serif text-4xl mt-1">
-            Your inbox, <span className="text-accent">with a point of view.</span>
-          </h1>
-          <p className="text-sm text-muted mt-2 max-w-xl">
-            Built for founders. Understands your fundraise, your customers, your deadlines.
-            Doesn&apos;t just summarize — it prioritizes.
-          </p>
+    <main className="max-w-7xl mx-auto px-6 pt-12 pb-20">
+      <header className="relative mb-10">
+        <div
+          aria-hidden
+          className="absolute -top-10 -left-10 -right-10 h-[260px] bg-atmosphere blur-2xl opacity-90 pointer-events-none"
+        />
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-[11px] uppercase tracking-eyebrow text-accent">
+              Email triage agent
+            </p>
+            <h1 className="font-serif text-display mt-2 text-ink">
+              Your inbox,
+              <br className="hidden sm:block" />{" "}
+              <em className="text-accent">with a point of view.</em>
+            </h1>
+            <p className="text-base text-muted mt-4 max-w-xl leading-relaxed">
+              Doesn’t just summarize — it prioritizes. The agent reads your
+              context, then streams every message into one of three buckets so
+              you only see what matters now.
+            </p>
+            <div className="hairline mt-6 max-w-sm" />
+          </div>
+
+          <div className="flex flex-col items-start md:items-end gap-3">
+            <span className="text-[11px] uppercase tracking-eyebrow text-muted">
+              Source · {sourceLabel}
+            </span>
+            <button
+              onClick={runTriage}
+              disabled={running || emails.length === 0}
+              className="group inline-flex items-center gap-2 px-5 py-3 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent/90 transition disabled:opacity-50 shadow-edge"
+            >
+              {running
+                ? total
+                  ? `Triaging · ${done}/${total}`
+                  : "Starting…"
+                : "Run triage"}
+              <span
+                aria-hidden
+                className="transition group-hover:translate-x-0.5"
+              >
+                →
+              </span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={runTriage}
-          disabled={running || emails.length === 0}
-          className="px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent/90 transition disabled:opacity-50"
-        >
-          {running
-            ? total
-              ? `Triaging… ${done}/${total}`
-              : "Starting…"
-            : "Run triage"}
-        </button>
       </header>
+
+      <div className="mb-6">
+        <SignInGate />
+      </div>
 
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <aside className="flex flex-col gap-4">
           <ContextCard />
-          <section className="bg-white border border-line rounded-2xl p-5 card-edge">
-            <h3 className="font-serif text-lg mb-2">Inbox</h3>
-            <p className="text-xs text-muted mb-3">
-              {emails.length} messages loaded from the seeded founder inbox.
+          <section className="surface card-edge p-5">
+            <div className="flex items-baseline justify-between">
+              <p className="text-[11px] uppercase tracking-eyebrow text-accent">
+                Inbox
+              </p>
+              <span className="text-xs text-muted tabular-nums">
+                {emailsLoading ? "…" : emails.length}
+              </span>
+            </div>
+            <h3 className="font-serif text-xl mt-1 leading-tight">
+              {authed ? "Your latest messages" : "Seeded founder inbox"}
+            </h3>
+            <p className="text-xs text-muted mt-1">
+              {authed
+                ? "Pulled from Gmail (read-only). The agent sees what you see."
+                : "Connect Gmail above to run triage against your real inbox."}
             </p>
-            <ul className="divide-y divide-line text-sm">
-              {emails.map((e) => (
-                <li key={e.id} className="py-2">
-                  <p className="truncate font-medium">{e.subject}</p>
-                  <p className="text-xs text-muted truncate">
-                    {e.sender_name} ·{" "}
-                    {new Date(e.received_at).toLocaleDateString()}
+            <ul className="mt-4 divide-y divide-line/80 text-sm">
+              {emails.slice(0, 10).map((e) => (
+                <li key={e.id} className="py-2.5">
+                  <p className="truncate font-medium text-ink">{e.subject}</p>
+                  <p className="text-xs text-muted truncate mt-0.5">
+                    <span className="text-ink-soft">{e.sender_name}</span>{" "}
+                    · {new Date(e.received_at).toLocaleDateString()}
                   </p>
                 </li>
               ))}
+              {emails.length === 0 && !emailsLoading && (
+                <li className="py-6 text-center text-muted italic text-sm">
+                  Inbox is empty.
+                </li>
+              )}
             </ul>
+            {emails.length > 10 && (
+              <p className="mt-3 text-[11px] text-muted">
+                +{emails.length - 10} more — triage runs on all of them.
+              </p>
+            )}
           </section>
         </aside>
 
         <section className="flex flex-col gap-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">
+            <div className="surface border-red-200 p-3 text-sm text-red-800 bg-red-50">
               {error}
             </div>
           )}
+
           {!running && done === 0 && !error && (
-            <div className="bg-white border border-dashed border-line rounded-2xl p-10 text-center">
-              <p className="font-serif text-xl mb-1">Ready when you are.</p>
-              <p className="text-sm text-muted">
-                Set your context on the left, then click <em>Run triage</em>. Results stream in
-                as the agent finishes each email.
+            <div className="surface-quiet border border-dashed border-line p-10 text-center rounded-2xl">
+              <p className="font-serif text-2xl mb-1">Ready when you are.</p>
+              <p className="text-sm text-muted max-w-md mx-auto">
+                Set your context on the left, then click{" "}
+                <em className="text-ink-soft">Run triage</em>. Results stream
+                in as the agent finishes each email.
               </p>
             </div>
           )}
 
           {pending.length > 0 && (
-            <div className="bg-white border border-line rounded-2xl p-4 card-edge">
-              <p className="text-xs uppercase tracking-wide text-muted mb-2">
-                Classifying {pending.length}…
+            <div className="surface card-edge p-4">
+              <p className="text-[11px] uppercase tracking-eyebrow text-accent mb-2">
+                Classifying {pending.length}
               </p>
-              <ul className="text-sm space-y-1">
+              <ul className="text-sm space-y-1.5">
                 {pending.map((p) => (
-                  <li key={p.email_id} className="flex items-center gap-2">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  <li
+                    key={p.email_id}
+                    className="flex items-center gap-2 text-ink-soft"
+                  >
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" />
                     <span className="truncate">
                       {emailsById[p.email_id]?.subject ?? p.email_id}
                     </span>
@@ -183,6 +253,7 @@ export default function Home() {
           <BucketColumn
             title="Act today"
             subtitle="Time-critical. Reply or decide now."
+            eyebrow="bucket 01 · now"
             accent="act"
             results={byBucket.act_today}
             emails={emailsById}
@@ -191,6 +262,7 @@ export default function Home() {
           <BucketColumn
             title="Decide this week"
             subtitle="Important, not urgent. Block time."
+            eyebrow="bucket 02 · this week"
             accent="decide"
             results={byBucket.decide_this_week}
             emails={emailsById}
@@ -199,6 +271,7 @@ export default function Home() {
           <BucketColumn
             title="FYI"
             subtitle="Archived by default. Skim only if you want."
+            eyebrow="bucket 03 · fyi"
             accent="fyi"
             results={byBucket.fyi}
             emails={emailsById}

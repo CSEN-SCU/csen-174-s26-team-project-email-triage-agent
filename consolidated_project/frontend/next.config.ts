@@ -1,14 +1,8 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000"}/api/:path*`,
-      },
-    ];
-  },
-};
+// All /api/* traffic flows through the App Router catch-all at
+// `app/api/[...path]/route.ts` so the NextAuth session can inject the
+// Gmail access token. The legacy rewrite to FastAPI is intentionally gone.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

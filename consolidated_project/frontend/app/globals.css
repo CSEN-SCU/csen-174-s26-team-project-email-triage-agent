@@ -4,28 +4,120 @@
 
 :root {
   color-scheme: light;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Inter", sans-serif;
+  --font-serif: ui-serif, Georgia, serif;
 }
 
-html, body {
+html,
+body {
   background: #faf8f3;
   color: #0f1115;
 }
 
-/* Subtle paper grain — ties the UI to the storyboard's fat-marker sketch feel */
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(15, 17, 21, 0.035) 1px, transparent 1px);
-  background-size: 3px 3px;
+  background-image:
+    radial-gradient(1100px 600px at 85% -10%, rgba(232, 106, 51, 0.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(176, 138, 62, 0.10), transparent 55%);
   z-index: 0;
 }
 
-main, header, section { position: relative; z-index: 1; }
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(15, 17, 21, 0.045) 1px, transparent 1px);
+  background-size: 3px 3px;
+  z-index: 0;
+  opacity: 0.7;
+}
 
-.card-edge {
-  box-shadow:
-    0 1px 0 rgba(15, 17, 21, 0.04),
-    0 12px 24px -16px rgba(15, 17, 21, 0.18);
+main,
+header,
+nav,
+section,
+aside,
+footer {
+  position: relative;
+  z-index: 1;
+}
+
+.font-serif {
+  font-feature-settings: "liga", "dlig", "kern";
+}
+
+@layer components {
+  .card-edge {
+    box-shadow:
+      0 1px 0 rgba(15, 17, 21, 0.04),
+      0 14px 30px -22px rgba(15, 17, 21, 0.25);
+  }
+
+  .surface {
+    background: #ffffff;
+    border: 1px solid #e5e1d6;
+    border-radius: 1.25rem;
+  }
+
+  .surface-quiet {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.35));
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(15, 17, 21, 0.05);
+    border-radius: 1.25rem;
+  }
+
+  .bucket {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid #e5e1d6;
+    border-radius: 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .bucket::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: currentColor;
+    opacity: 0.85;
+  }
+
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, #0f1115 0%, transparent 100%);
+    opacity: 0.18;
+  }
+
+  .stagger > * {
+    animation: rise-in 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .stagger > *:nth-child(1)  { animation-delay: 0ms; }
+  .stagger > *:nth-child(2)  { animation-delay: 60ms; }
+  .stagger > *:nth-child(3)  { animation-delay: 120ms; }
+  .stagger > *:nth-child(4)  { animation-delay: 180ms; }
+  .stagger > *:nth-child(5)  { animation-delay: 240ms; }
+  .stagger > *:nth-child(6)  { animation-delay: 300ms; }
+  .stagger > *:nth-child(7)  { animation-delay: 360ms; }
+  .stagger > *:nth-child(8)  { animation-delay: 420ms; }
+  .stagger > *:nth-child(n+9) { animation-delay: 480ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
