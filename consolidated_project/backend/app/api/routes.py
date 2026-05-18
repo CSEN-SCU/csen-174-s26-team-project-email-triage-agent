@@ -21,6 +21,7 @@ from app.inbox_repository import (
     list_emails as list_emails_repo,
 )
 from app.models.email import Bucket, Email, TriageDigest, TriageResult
+from app.security import sanitize_user_context
 
 router = APIRouter()
 logger = logging.getLogger("triage.routes")
@@ -88,7 +89,7 @@ def get_context() -> dict[str, str]:
 @router.post("/context")
 def set_context(payload: ContextPayload) -> dict[str, str]:
     global _user_context
-    _user_context = payload.user_context.strip() or DEFAULT_USER_CONTEXT
+    _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
     return {"user_context": _user_context}
 
 
@@ -150,7 +151,7 @@ async def triage(
 ) -> TriageDigest:
     global _user_context
     if payload.user_context:
-        _user_context = payload.user_context
+        _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
     emails = await _select_emails(payload.email_ids, token)
     loop = asyncio.get_running_loop()
     with ThreadPoolExecutor(max_workers=min(8, len(emails) or 1)) as pool:
@@ -204,7 +205,7 @@ async def triage_stream(
     """
     global _user_context
     if payload.user_context:
-        _user_context = payload.user_context
+        _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
     emails = await _select_emails(payload.email_ids, token)
     context = _user_context
 
