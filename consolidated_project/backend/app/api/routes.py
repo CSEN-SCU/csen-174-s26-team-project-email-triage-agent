@@ -21,7 +21,7 @@ from app.inbox_repository import (
     list_emails as list_emails_repo,
 )
 from app.models.email import Bucket, Email, TriageDigest, TriageResult
-from app.security import sanitize_user_context
+from app.security import rate_limit_default, rate_limit_triage, sanitize_user_context
 
 router = APIRouter()
 logger = logging.getLogger("triage.routes")
@@ -45,7 +45,10 @@ def health() -> dict[str, str]:
 
 
 @router.get("/auth/status")
-def auth_status(token: str | None = Depends(gmail_access_token)) -> dict[str, bool]:
+def auth_status(
+    token: str | None = Depends(gmail_access_token),
+    _: str = Depends(rate_limit_default),
+) -> dict[str, bool]:
     """Cheap probe used by the frontend to verify the Bearer token reached the
     backend (i.e. the NextAuth proxy is wired and the user is signed in)."""
     return {"authenticated": token is not None}
@@ -54,19 +57,28 @@ def auth_status(token: str | None = Depends(gmail_access_token)) -> dict[str, bo
 @router.get("/emails", response_model=list[Email])
 async def list_emails(
     token: str | None = Depends(gmail_access_token),
+    _: str = Depends(rate_limit_default),
 ) -> list[Email]:
     if token:
         try:
             return await fetch_inbox(token)
         except GmailFetchError as exc:
             logger.warning("gmail fetch failed; serving mock inbox: %s", exc)
-    return await list_emails_repo()
+    try:
+        return await list_emails_repo()
+    except Exception as exc:  # noqa: BLE001 — surface DB outage as 503
+        logger.exception("inbox repository unavailable")
+        raise HTTPException(
+            status_code=503,
+            detail="email backend unavailable",
+        ) from exc
 
 
 @router.get("/emails/{email_id}", response_model=Email)
 async def get_email_by_id(
     email_id: str,
     token: str | None = Depends(gmail_access_token),
+    _: str = Depends(rate_limit_default),
 ) -> Email:
     if token:
         try:
@@ -75,19 +87,29 @@ async def get_email_by_id(
                 return emails[0]
         except GmailFetchError as exc:
             logger.warning("gmail get failed; falling back to mock: %s", exc)
-    email = await get_email(email_id)
+    try:
+        email = await get_email(email_id)
+    except Exception as exc:  # noqa: BLE001 — surface DB outage as 503
+        logger.exception("inbox repository unavailable")
+        raise HTTPException(
+            status_code=503,
+            detail="email backend unavailable",
+        ) from exc
     if email is None:
         raise HTTPException(status_code=404, detail="email not found")
     return email
 
 
 @router.get("/context")
-def get_context() -> dict[str, str]:
+def get_context(_: str = Depends(rate_limit_default)) -> dict[str, str]:
     return {"user_context": _user_context}
 
 
 @router.post("/context")
-def set_context(payload: ContextPayload) -> dict[str, str]:
+def set_context(
+    payload: ContextPayload,
+    _: str = Depends(rate_limit_triage),
+) -> dict[str, str]:
     global _user_context
     _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
     return {"user_context": _user_context}
@@ -118,14 +140,20 @@ async def _select_emails(
                 by_id[e.id] = e
         return [by_id[i] for i in ids if i in by_id]
 
-    if not ids:
-        return await all_emails_default_order()
     try:
+        if not ids:
+            return await all_emails_default_order()
         return await get_emails_by_ids(ids)
     except UnknownEmailIdsError as exc:
         raise HTTPException(
             status_code=404,
             detail=f"unknown email ids: {exc.missing}",
+        ) from exc
+    except Exception as exc:  # noqa: BLE001 — DB / repo outage
+        logger.exception("inbox repository unavailable")
+        raise HTTPException(
+            status_code=503,
+            detail="email backend unavailable",
         ) from exc
 
 
@@ -148,19 +176,30 @@ def _bucket_results(results: list[TriageResult]) -> TriageDigest:
 async def triage(
     payload: TriagePayload,
     token: str | None = Depends(gmail_access_token),
+    _: str = Depends(rate_limit_triage),
 ) -> TriageDigest:
     global _user_context
     if payload.user_context:
         _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
     emails = await _select_emails(payload.email_ids, token)
     loop = asyncio.get_running_loop()
-    with ThreadPoolExecutor(max_workers=min(8, len(emails) or 1)) as pool:
-        results = await asyncio.gather(
-            *(
-                loop.run_in_executor(pool, triage_email, email, _user_context)
-                for email in emails
+    try:
+        with ThreadPoolExecutor(max_workers=min(8, len(emails) or 1)) as pool:
+            results = await asyncio.gather(
+                *(
+                    loop.run_in_executor(pool, triage_email, email, _user_context)
+                    for email in emails
+                )
             )
-        )
+    except asyncio.TimeoutError as exc:
+        logger.exception("triage timed out")
+        raise HTTPException(status_code=504, detail="triage timed out") from exc
+    except Exception as exc:  # noqa: BLE001 — LLM / agent outage
+        logger.exception("triage agent failed")
+        raise HTTPException(
+            status_code=502,
+            detail="triage agent unavailable",
+        ) from exc
     return _bucket_results(list(results))
 
 
@@ -193,6 +232,7 @@ def _serialize_patch(patch: dict[str, Any]) -> dict[str, Any]:
 async def triage_stream(
     payload: TriagePayload,
     token: str | None = Depends(gmail_access_token),
+    _: str = Depends(rate_limit_triage),
 ):
     """SSE: emit per-stage updates as each LangGraph node completes per email.
 
