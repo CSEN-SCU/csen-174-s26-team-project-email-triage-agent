@@ -40,7 +40,7 @@ export function AuthChip() {
         disabled={busy}
         onClick={async () => {
           setBusy(true);
-          await signIn("google", { callbackUrl: "/" });
+          await signIn("google", { callbackUrl: "/app" });
         }}
         className="inline-flex items-center gap-2 h-9 px-3.5 rounded-full bg-ink text-paper text-xs font-medium tracking-tight hover:bg-ink-soft transition disabled:opacity-60"
       >

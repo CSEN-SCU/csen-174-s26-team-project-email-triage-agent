@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
-import { Nav } from "@/components/Nav";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -19,9 +18,9 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Sales Triage — an email agent that knows your pipeline",
+  title: "Email Triage — your inbox with a point of view",
   description:
-    "Built for B2B sellers. Adapts to your deals, accounts, and quota instead of summarizing every email the same way.",
+    "Email triage for founders. Context-aware buckets — act today, decide this week, FYI — not another generic AI digest.",
 };
 
 export default function RootLayout({
@@ -32,10 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${instrumentSerif.variable}`}>
       <body className="antialiased min-h-screen">
-        <Providers>
-          <Nav />
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

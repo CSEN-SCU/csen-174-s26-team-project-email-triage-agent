@@ -28,7 +28,7 @@ export function SignInGate() {
         </div>
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/" })}
+          onClick={() => signIn("google", { callbackUrl: "/app" })}
           className="self-start md:self-auto inline-flex items-center gap-2 h-10 px-4 rounded-full bg-ink text-paper text-sm font-medium hover:bg-ink-soft transition whitespace-nowrap"
         >
           Connect Gmail
