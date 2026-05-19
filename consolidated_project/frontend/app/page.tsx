@@ -276,6 +276,7 @@ export default function Home() {
             results={byBucket.fyi}
             emails={emailsById}
             empty="Nothing to skim."
+            defaultExpanded={false}
           />
         </section>
       </div>
