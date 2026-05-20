@@ -1,13 +1,13 @@
-for **entrepreneurs**
+FOR **entrepreneurs**
 
-who **need to balance time and ability to respond to/keep track of important information received via email**
+WHO **need to balance time and ability to respond to/keep track of important information received via email**
 
-the **Email Triage Agent** is a **SaaS platform**
+THE  **Email Triage Agent** IS A **SaaS platform**
 
-that **automatically organizes, prioritizes, and surfaces actionable insights from your inbox**
+THAT **automatically organizes, prioritizes, and surfaces actionable insights from your inbox**
 
-unlike **general-purpose tools like Google Gemini in Gmail**
+UNLIKE **general-purpose tools like Google Gemini in Gmail**
 
-our product **adapts based on your specific workflows, business context, and decision-making patterns to deliver a personalized email management system**
+OUR PRODUCT **adapts based on your specific workflows, business context, and decision-making patterns to deliver a personalized email management system**
 
-powered by **natural language understanding, intent classification, priority scoring, semantic summarization, and workflow automation**
+POWERED BY **natural language understanding, intent classification, priority scoring, semantic summarization, and workflow automation**
