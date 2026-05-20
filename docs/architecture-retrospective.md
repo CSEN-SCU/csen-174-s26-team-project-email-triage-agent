@@ -1,26 +1,3 @@
-Part 1: Product vision revisited from W2 (updated if anything shifted); current C4 context and container diagrams that reflect the state of main; 1 to 3 decisions that shifted, each with context, decision, consequences, and Fowler-quadrant classification; tech debt list with per-item classification and a plan; one sentence on what the team would do differently
-____________
-
-Write a note at docs/architecture-retrospective.md that compares your W4 architecture to what you have built, classifies the tech debt you are carrying into code freeze, and explains the decisions that shifted along the way.
-
-This is a modified ADR practice. ADRs are normally written at the time of the decision and kept as a living record. Most of your architectural decisions got made fast and undocumented during the prototype phase. The team is reverse-engineering a few of them now as a learning exercise.
-
-Required structure:
-
-Product vision (revisited). Paste the W2 product vision statement. If anything has shifted (audience, problem, key differentiator, POWERED BY line), update the statement and add one or two sentences on what changed and why. If nothing has shifted, say so in one sentence.
-W4 intended architecture. Link to the C4 context and container diagrams the team submitted in W4. One-paragraph summary of what the team planned to build.
-Current-state architecture. Current C4 context diagram and current C4 container diagram, both reflecting what is on main today (not the W4 plan, not where you hope to be by code freeze). Use any tool the team likes: Mermaid, draw.io, Excalidraw, Lucidchart, a Cursor-generated draft you correct, hand-drawn on paper or a tablet. Embed in the note as PNG, SVG, or Mermaid, or link from a docs/architecture/ subfolder.
-Decisions that shifted. Pick 1 to 3 architectural decisions that changed between W4 and now. For each, write a short block in this shape:
-Context: what forced the call (a constraint, a surprise, a deadline, red team feedback, a teammate's Friday-night fix).
-Decision: what the team chose.
-Consequences: what the team accepts by choosing it (operational complexity, vendor lock-in, a new dependency, a deferred problem).
-Classification: which Fowler quadrant the resulting state lives in (deliberate vs inadvertent, prudent vs reckless), with one sentence on why.
-Tech debt heading into code freeze. A short list of debt items the team is carrying. Each item gets a Fowler quadrant classification and one sentence on whether the team will address it before code freeze or live with it through demo night.
-One sentence on what the team would do differently with another sprint. This sentence feeds the W10 technical report.
-Two to three pages of prose plus the diagrams.
-
-________________
-
 # Part 1: Product Vision (Revisited)
 FOR **entrepreneurs**
 
