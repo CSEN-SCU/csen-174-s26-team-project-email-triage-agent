@@ -36,7 +36,7 @@ flowchart TB
 
   subgraph external["External systems"]
     google["Google\nOAuth 2.0 + Gmail API"]
-    anthropic["Anthropic API\nClaude Haiku + Sonnet"]
+    antigravity["Gemini API\nGemini 3.5 Flash"]
     postgres["PostgreSQL"]
     vercel["Vercel\n(frontend hosting)"]
     gfonts["Google Fonts CDN\n(next/font)"]
@@ -45,7 +45,7 @@ flowchart TB
   founder -->|"HTTPS browser"| system
   system -->|"Deployed on"| vercel
   system -->|"Sign-in, read inbox"| google
-  system -->|"Antigravity agent pipeline"| anthropic
+  system -->|"Antigravity agent pipeline"| antigravity
   system -->|"Database"| postgres
   system -.->|"Font files at build/runtime"| gfonts
 ```
