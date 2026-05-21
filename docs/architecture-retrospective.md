@@ -19,7 +19,7 @@ ________________
 # Part 2: W4 Intended Architecture
 Link to the W4 C4 context and container diagrams
 
-[LINK](architecture/architecture.md)
+[LINK](../architecture/architecture.md)
 
 For the W4 intended architecture, the team planned to build a consolidated single-page Email Triage Agent application deployed as containerized workloads orchestrated on Kubernetes. The setup featured a Next.js 15 frontend and a FastAPI backend with a monolithic LangGraph pipeline running in-process to handle email classification, summarization, action extraction, and draft replies using the Anthropic Claude API. Additionally, the plan included deploying a PostgreSQL/SQLite database for email and context persistence and a Redis caching layer for agent and triage responses within the Kubernetes cluster.
 
