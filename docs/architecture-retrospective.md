@@ -75,11 +75,9 @@ flowchart TB
       security["Sanitize + rate limit\n(app/security/*)"]
       gmailmod["Gmail client\n(app/auth/gmail.py)"]
       inbox["Inbox repository\n(app/inbox_repository.py)"]
-      mock["In-memory mock inbox\n(app/data/mock_inbox.py)"]
       routes --> security
       routes --> gmailmod
       routes --> inbox
-      inbox --> mock
     end
 
     subgraph agent_classifier["Container: Classifier Agent (Antigravity Runtime)"]
@@ -103,7 +101,7 @@ flowchart TB
   google_token["Google token endpoint\n(oauth2.googleapis.com)"]
   gmail_api["Gmail API v1\n(googleapis.com)"]
   anthropic_api["Anthropic Messages API"]
-  pg[("PostgreSQL\n(optional)")]
+  pg[("PostgreSQL")]
 
   founder -->|"HTTPS"| marketing
   founder -->|"HTTPS"| dashboard
@@ -127,7 +125,6 @@ flowchart TB
 
   style web fill:#e3f2fd,stroke:#1565c0
   style api fill:#e8eaf6,stroke:#3949ab
-  style mock fill:#fff8e1,stroke:#f57f17,stroke-dasharray:4 4
   style agent_classifier fill:#e0f2f1,stroke:#00695c
   style agent_summarizer fill:#e0f7fa,stroke:#00838f
   style agent_actions fill:#e1f5fe,stroke:#0277bd
