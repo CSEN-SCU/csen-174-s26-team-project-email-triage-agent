@@ -18,6 +18,11 @@ const STAGE_ORDER: Stage[] = ["classify", "summarize", "actions", "draft"];
 export default function Home() {
   const { data: session, status } = useSession();
   const authed = !!session?.user;
+  // Sending/drafting needs a live Gmail access token, not just a session — a
+  // user can be signed in while token refresh has failed. Gate the draft
+  // actions on the token so the UI shows "Connect Gmail to send" instead of an
+  // opaque 401 from the backend.
+  const canSend = !!(session?.user && session?.accessToken);
 
   const [emails, setEmails] = useState<Email[]>([]);
   const [emailsLoading, setEmailsLoading] = useState(false);
@@ -258,7 +263,7 @@ export default function Home() {
             results={byBucket.act_today}
             emails={emailsById}
             empty="Nothing burning right now."
-            canSend={authed}
+            canSend={canSend}
           />
           <BucketColumn
             title="Decide this week"
@@ -268,7 +273,7 @@ export default function Home() {
             results={byBucket.decide_this_week}
             emails={emailsById}
             empty="No pending decisions."
-            canSend={authed}
+            canSend={canSend}
           />
           <BucketColumn
             title="FYI"
@@ -279,7 +284,7 @@ export default function Home() {
             emails={emailsById}
             empty="Nothing to skim."
             defaultExpanded={false}
-            canSend={authed}
+            canSend={canSend}
           />
         </section>
       </div>
