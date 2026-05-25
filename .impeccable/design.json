@@ -174,9 +174,6 @@
     "donts": [
       "Don't produce generic Gmail/Gemini-style summary blobs without structure",
       "Don't use playful startup illustration or mascots",
-      "Don't adopt dark hacker/terminal aesthetics",
-      "Don't use SaaS dashboard clichés: purple gradients, metric-card grids, glassmorphism, colored border-left stripes",
-      "Don't use gradient text or hero-metric templates",
       "Don't nest cards inside cards"
     ]
   }

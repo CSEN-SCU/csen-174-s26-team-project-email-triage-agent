@@ -1,7 +1,7 @@
 "use client";
 
+import { HeroRotatingText } from "@/components/HeroRotatingText";
 import { LandingCtas } from "@/components/landing/LandingCtas";
-import { LogoMark } from "@/components/LogoMark";
 import { LandingProductPreview } from "@/components/LandingProductPreview";
 import {
   RevealGroup,
@@ -12,6 +12,13 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+
+const HERO_ROTATION_OPTIONS = [
+  "point of view.",
+  "founder context.",
+  "clear lens.",
+  "decision filter.",
+] as const;
 
 const BUCKETS = [
   {
@@ -97,20 +104,16 @@ export function LandingPage() {
         />
         <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-14 items-center">
           <div>
-            <div className="flex items-center gap-3">
-              <LogoMark className="w-10 h-10" bare />
-              <span className="font-serif text-lg leading-none tracking-tight text-ink">
-                Email Triage
-              </span>
-            </div>
             <p className="eyebrow text-accent">Morning brief for founders</p>
             <h1
               id="landing-hero-heading"
-              className="font-serif text-display mt-3 text-ink"
+              className="font-serif text-display mt-2 text-ink"
             >
               Your inbox,
               <br />
-              <em className="text-accent">with a point of view.</em>
+              <em className="text-accent">
+                with a <HeroRotatingText phrases={HERO_ROTATION_OPTIONS} />
+              </em>
             </h1>
             <p className="text-base text-muted mt-4 max-w-xl leading-relaxed">
               Not another summary wall. Email Triage reads your deals and goals,

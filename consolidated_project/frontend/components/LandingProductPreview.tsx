@@ -227,10 +227,10 @@ export function LandingProductPreview() {
                       subtitle={slide.subtitle}
                       eyebrow={slide.eyebrow}
                       accent={slide.accent}
-                    results={[...slide.results]}
+                      results={[...slide.results]}
                       emails={DEMO_EMAILS}
                       empty={slide.empty}
-                    defaultExpanded
+                      defaultExpanded
                     />
                   </div>
                 </div>
