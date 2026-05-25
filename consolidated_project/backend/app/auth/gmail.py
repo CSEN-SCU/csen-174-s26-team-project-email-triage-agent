@@ -184,6 +184,83 @@ def _fetch_by_ids_sync(access_token: str, ids: list[str]) -> list[Email]:
     return out
 
 
+def _fetch_reply_headers_sync(service, email_id: str) -> tuple[dict[str, str], str]:
+    """Return ({lowercased header: value}, thread_id) for the message being replied to."""
+    try:
+        msg = (
+            service.users()
+            .messages()
+            .get(
+                userId="me",
+                id=email_id,
+                format="metadata",
+                metadataHeaders=["Message-ID", "Subject", "From"],
+            )
+            .execute()
+        )
+    except HttpError as exc:
+        raise GmailFetchError(f"gmail get {email_id} failed: {exc}") from exc
+    headers = {
+        h["name"].lower(): h.get("value", "")
+        for h in (msg.get("payload", {}).get("headers") or [])
+    }
+    return headers, msg.get("threadId", email_id)
+
+
+def _send_reply_sync(access_token: str, email_id: str, body: str) -> dict[str, str]:
+    service = _build_service(access_token)
+    headers, thread_id = _fetch_reply_headers_sync(service, email_id)
+    _, to_addr = parseaddr(headers.get("from", ""))
+    raw = _build_reply_mime(
+        to_addr=to_addr or headers.get("from", ""),
+        subject=headers.get("subject", ""),
+        in_reply_to=headers.get("message-id") or None,
+        body=body,
+    )
+    try:
+        sent = (
+            service.users()
+            .messages()
+            .send(userId="me", body={"raw": raw, "threadId": thread_id})
+            .execute()
+        )
+    except HttpError as exc:
+        raise GmailFetchError(f"gmail send failed: {exc}") from exc
+    return {"id": sent["id"], "thread_id": sent.get("threadId", thread_id)}
+
+
+def _create_draft_reply_sync(access_token: str, email_id: str, body: str) -> dict[str, str]:
+    service = _build_service(access_token)
+    headers, thread_id = _fetch_reply_headers_sync(service, email_id)
+    _, to_addr = parseaddr(headers.get("from", ""))
+    raw = _build_reply_mime(
+        to_addr=to_addr or headers.get("from", ""),
+        subject=headers.get("subject", ""),
+        in_reply_to=headers.get("message-id") or None,
+        body=body,
+    )
+    try:
+        draft = (
+            service.users()
+            .drafts()
+            .create(userId="me", body={"message": {"raw": raw, "threadId": thread_id}})
+            .execute()
+        )
+    except HttpError as exc:
+        raise GmailFetchError(f"gmail draft create failed: {exc}") from exc
+    return {"draft_id": draft["id"]}
+
+
+async def send_reply(access_token: str, email_id: str, body: str) -> dict[str, str]:
+    return await asyncio.to_thread(_send_reply_sync, access_token, email_id, body)
+
+
+async def create_draft_reply(
+    access_token: str, email_id: str, body: str
+) -> dict[str, str]:
+    return await asyncio.to_thread(_create_draft_reply_sync, access_token, email_id, body)
+
+
 async def fetch_inbox(
     access_token: str,
     max_results: int = _DEFAULT_MAX_RESULTS,
