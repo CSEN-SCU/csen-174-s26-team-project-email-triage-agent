@@ -190,6 +190,10 @@ footer {
     position: relative;
   }
 
+  .landing-preview-reel .bucket {
+    background: rgba(255, 255, 255, 0.82);
+  }
+
   .stack-section {
     position: sticky;
     top: 3.5rem; /* below LandingNav (h-14) */
