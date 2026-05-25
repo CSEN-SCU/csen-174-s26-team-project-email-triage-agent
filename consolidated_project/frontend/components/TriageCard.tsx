@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import type { Email, PartialTriageResult, Stage } from "@/lib/types";
+import { api } from "@/lib/api";
+import type {
+  Email,
+  PartialTriageResult,
+  Stage,
+  SubmitStatus,
+} from "@/lib/types";
+import { canSubmitDraft } from "@/lib/triage-helpers";
 
 type Accent = "act" | "decide" | "fyi";
 
@@ -56,12 +63,17 @@ export function TriageCard({
   result,
   email,
   accent = "act",
+  canSend = false,
 }: {
   result: PartialTriageResult;
   email?: Email;
   accent?: Accent;
+  canSend?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [body, setBody] = useState("");
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const hasDraft = !!result.draft_reply;
   const signal = result.signal;
 
@@ -71,6 +83,43 @@ export function TriageCard({
       : accent === "decide"
         ? "text-decide"
         : "text-ink-soft";
+
+  function openDraft() {
+    if (!expanded && submitStatus === "idle") {
+      setBody(result.draft_reply ?? "");
+    }
+    setExpanded((v) => !v);
+  }
+
+  async function handleSend() {
+    if (!email) return;
+    setSubmitStatus("sending");
+    setSubmitError(null);
+    try {
+      await api.sendReply(email.id, body);
+      setSubmitStatus("sent");
+    } catch (e) {
+      setSubmitStatus("error");
+      setSubmitError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleSaveDraft() {
+    if (!email) return;
+    setSubmitStatus("saving");
+    setSubmitError(null);
+    try {
+      await api.saveDraft(email.id, body);
+      setSubmitStatus("saved");
+    } catch (e) {
+      setSubmitStatus("error");
+      setSubmitError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  const locked = submitStatus === "sent" || submitStatus === "saved";
+  const inFlight = submitStatus === "sending" || submitStatus === "saving";
+  const canSubmit = canSubmitDraft({ canSend, body, status: submitStatus });
 
   return (
     <article className="surface card-edge p-5 transition hover:shadow-edge-lg">
@@ -141,14 +190,61 @@ export function TriageCard({
       {hasDraft && (
         <div className="mt-4 border-t border-line pt-3">
           <button
-            onClick={() => setExpanded((v) => !v)}
+            onClick={openDraft}
             className={`text-sm hover:underline ${accentTone}`}
           >
             {expanded ? "Hide draft reply" : "View draft reply →"}
           </button>
           {expanded && (
-            <div className="mt-3 bg-paper-deep/60 border border-line rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed text-ink-soft font-serif animate-fade-in">
-              {result.draft_reply}
+            <div className="mt-3 animate-fade-in">
+              {locked ? (
+                <div className="bg-paper-deep/60 border border-line rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed text-ink-soft font-serif">
+                  {body}
+                </div>
+              ) : (
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  disabled={inFlight}
+                  rows={6}
+                  aria-label="Edit draft reply"
+                  className="w-full bg-paper-deep/60 border border-line rounded-lg p-4 text-sm leading-relaxed text-ink-soft font-serif resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:opacity-60"
+                />
+              )}
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {locked ? (
+                  <span className={`text-sm font-medium ${accentTone}`}>
+                    {submitStatus === "sent" ? "Sent ✓" : "Saved to Gmail ✓"}
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleSend}
+                      disabled={!canSubmit}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent/90 transition disabled:opacity-50 shadow-edge"
+                    >
+                      {submitStatus === "sending" ? "Sending…" : "Send"}
+                    </button>
+                    <button
+                      onClick={handleSaveDraft}
+                      disabled={!canSubmit}
+                      className="inline-flex items-center px-4 py-2 rounded-full border border-line text-sm font-medium text-ink-soft hover:bg-paper-deep/60 transition disabled:opacity-50"
+                    >
+                      {submitStatus === "saving" ? "Saving…" : "Save as Gmail draft"}
+                    </button>
+                    {!canSend && (
+                      <span className="text-xs text-muted">
+                        Connect Gmail to send
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {submitError && (
+                <p className="mt-2 text-xs text-red-700">error: {submitError}</p>
+              )}
             </div>
           )}
         </div>
