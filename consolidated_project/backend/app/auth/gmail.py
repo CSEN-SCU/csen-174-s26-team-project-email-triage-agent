@@ -12,6 +12,7 @@ import base64
 import logging
 import re
 from datetime import datetime, timezone
+from email.message import EmailMessage
 from email.utils import parseaddr
 from typing import Any
 
@@ -48,6 +49,33 @@ _HTML_WS_RE = re.compile(r"\s+")
 def _strip_html(html: str) -> str:
     text = _HTML_TAG_RE.sub(" ", html)
     return _HTML_WS_RE.sub(" ", text).strip()
+
+
+def _reply_subject(subject: str) -> str:
+    """Prefix `Re:` unless the subject already starts with one (any case)."""
+    cleaned = (subject or "").strip()
+    if not cleaned:
+        return "Re:"
+    if cleaned.lower().startswith("re:"):
+        return cleaned
+    return f"Re: {cleaned}"
+
+
+def _build_reply_mime(
+    to_addr: str,
+    subject: str,
+    in_reply_to: str | None,
+    body: str,
+) -> str:
+    """Build a plain-text reply and return it base64url-encoded for the Gmail API."""
+    msg = EmailMessage()
+    msg["To"] = to_addr
+    msg["Subject"] = _reply_subject(subject)
+    if in_reply_to:
+        msg["In-Reply-To"] = in_reply_to
+        msg["References"] = in_reply_to
+    msg.set_content(body)
+    return base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
 
 
 def _extract_body(payload: dict[str, Any]) -> str:
