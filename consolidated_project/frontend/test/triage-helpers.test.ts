@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import {
+    canSubmitDraft,
     clampTriagePriority,
     countDigestEmails,
     isValidBucket,
@@ -51,5 +52,30 @@ describe("countDigestEmails", () => {
             fyi: [],
         }
         expect(countDigestEmails(digest)).toBe(3)
+    })
+})
+
+// Plain language: Send/Save buttons only work with a Gmail connection,
+// non-empty text, and when no request is already in flight or finished.
+describe("canSubmitDraft", () => {
+    test("enabled with gmail, non-empty body, idle status", () => {
+        expect(canSubmitDraft({ canSend: true, body: "hi", status: "idle" })).toBe(true)
+        expect(canSubmitDraft({ canSend: true, body: "hi", status: "error" })).toBe(true)
+    })
+
+    test("disabled without a gmail connection", () => {
+        expect(canSubmitDraft({ canSend: false, body: "hi", status: "idle" })).toBe(false)
+    })
+
+    test("disabled when body is empty or whitespace", () => {
+        expect(canSubmitDraft({ canSend: true, body: "", status: "idle" })).toBe(false)
+        expect(canSubmitDraft({ canSend: true, body: "   ", status: "idle" })).toBe(false)
+    })
+
+    test("disabled while a request is in flight or already finished", () => {
+        expect(canSubmitDraft({ canSend: true, body: "hi", status: "sending" })).toBe(false)
+        expect(canSubmitDraft({ canSend: true, body: "hi", status: "saving" })).toBe(false)
+        expect(canSubmitDraft({ canSend: true, body: "hi", status: "sent" })).toBe(false)
+        expect(canSubmitDraft({ canSend: true, body: "hi", status: "saved" })).toBe(false)
     })
 })

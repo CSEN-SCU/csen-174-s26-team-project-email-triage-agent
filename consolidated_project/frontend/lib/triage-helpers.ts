@@ -1,4 +1,4 @@
-import type { Bucket, TriageDigest } from "./types"
+import type { Bucket, SubmitStatus, TriageDigest } from "./types"
 
 const BUCKETS: readonly Bucket[] = ["act_today", "decide_this_week", "fyi"]
 
@@ -21,4 +21,17 @@ export function countDigestEmails(
         digest.decide_this_week.length +
         digest.fyi.length
     )
+}
+
+/** Whether the Send / Save buttons should be enabled for a draft card. */
+export function canSubmitDraft(args: {
+    canSend: boolean
+    body: string
+    status: SubmitStatus
+}): boolean {
+    const { canSend, body, status } = args
+    if (!canSend) return false
+    if (status === "sending" || status === "saving") return false
+    if (status === "sent" || status === "saved") return false
+    return body.trim().length > 0
 }
