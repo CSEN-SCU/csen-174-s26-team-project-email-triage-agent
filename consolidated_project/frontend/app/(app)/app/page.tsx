@@ -258,6 +258,7 @@ export default function Home() {
             results={byBucket.act_today}
             emails={emailsById}
             empty="Nothing burning right now."
+            canSend={authed}
           />
           <BucketColumn
             title="Decide this week"
@@ -267,6 +268,7 @@ export default function Home() {
             results={byBucket.decide_this_week}
             emails={emailsById}
             empty="No pending decisions."
+            canSend={authed}
           />
           <BucketColumn
             title="FYI"
@@ -277,6 +279,7 @@ export default function Home() {
             emails={emailsById}
             empty="Nothing to skim."
             defaultExpanded={false}
+            canSend={authed}
           />
         </section>
       </div>
