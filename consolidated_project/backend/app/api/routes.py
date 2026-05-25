@@ -11,7 +11,13 @@ from pydantic import BaseModel
 
 from app.agent.graph import get_graph, triage_email
 from app.auth.deps import gmail_access_token
-from app.auth.gmail import GmailFetchError, fetch_emails_by_ids, fetch_inbox
+from app.auth.gmail import (
+    GmailFetchError,
+    create_draft_reply,
+    fetch_emails_by_ids,
+    fetch_inbox,
+    send_reply,
+)
 from app.data.mock_inbox import DEFAULT_USER_CONTEXT
 from app.inbox_repository import (
     UnknownEmailIdsError,
@@ -20,7 +26,7 @@ from app.inbox_repository import (
     get_emails_by_ids,
     list_emails as list_emails_repo,
 )
-from app.models.email import Bucket, Email, TriageDigest, TriageResult
+from app.models.email import Bucket, Email, SendReplyPayload, TriageDigest, TriageResult
 from app.security import rate_limit_default, rate_limit_triage, sanitize_user_context
 
 router = APIRouter()
@@ -296,3 +302,37 @@ async def triage_stream(
             pool.shutdown(wait=False)
 
     return StreamingResponse(event_source(), media_type="text/event-stream")
+
+
+@router.post("/send")
+async def send_reply_endpoint(
+    payload: SendReplyPayload,
+    token: str | None = Depends(gmail_access_token),
+    _: str = Depends(rate_limit_triage),
+) -> dict[str, str]:
+    if not token:
+        raise HTTPException(status_code=401, detail="gmail authentication required")
+    try:
+        result = await send_reply(token, payload.email_id, payload.body)
+    except GmailFetchError as exc:
+        logger.warning("gmail send failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"gmail send failed: {exc}") from exc
+    return {**result, "status": "sent"}
+
+
+@router.post("/draft")
+async def save_draft_endpoint(
+    payload: SendReplyPayload,
+    token: str | None = Depends(gmail_access_token),
+    _: str = Depends(rate_limit_triage),
+) -> dict[str, str]:
+    if not token:
+        raise HTTPException(status_code=401, detail="gmail authentication required")
+    try:
+        result = await create_draft_reply(token, payload.email_id, payload.body)
+    except GmailFetchError as exc:
+        logger.warning("gmail draft create failed: %s", exc)
+        raise HTTPException(
+            status_code=502, detail=f"gmail draft create failed: {exc}"
+        ) from exc
+    return {**result, "status": "draft_saved"}
