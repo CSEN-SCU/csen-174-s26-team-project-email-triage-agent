@@ -6,6 +6,7 @@ const GMAIL_SCOPES = [
   "email",
   "profile",
   "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.compose",
 ].join(" ");
 
 interface RefreshedTokens {
