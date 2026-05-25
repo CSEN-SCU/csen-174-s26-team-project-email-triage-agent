@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   title: "Email Triage — your inbox with a point of view",
   description:
     "Email triage for founders. Context-aware buckets — act today, decide this week, FYI — not another generic AI digest.",
+  icons: {
+    icon: "/triage_symbol.png",
+    shortcut: "/triage_symbol.png",
+    apple: "/triage_symbol.png",
+  },
 };
 
 export default function RootLayout({

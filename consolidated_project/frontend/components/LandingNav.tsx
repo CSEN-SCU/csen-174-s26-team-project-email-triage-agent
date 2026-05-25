@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { LogoMark } from "./LogoMark";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
@@ -25,12 +26,7 @@ export function LandingNav() {
           href="/"
           className={`flex items-center gap-2 shrink-0 rounded-md -ml-1 pl-1 pr-2 py-1 hover:opacity-90 transition-opacity ${focusRing}`}
         >
-          <span
-            aria-hidden
-            className="w-7 h-7 rounded-md bg-ink text-paper grid place-items-center font-mono text-[11px] leading-none tracking-tighter"
-          >
-            []
-          </span>
+          <LogoMark className="w-7 h-7" bare />
           <span className="font-serif text-lg leading-none tracking-tight text-ink">
             Email Triage
           </span>

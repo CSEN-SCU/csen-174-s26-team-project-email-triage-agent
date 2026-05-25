@@ -1,6 +1,7 @@
 "use client";
 
 import { LandingCtas } from "@/components/landing/LandingCtas";
+import { LogoMark } from "@/components/LogoMark";
 import { LandingProductPreview } from "@/components/LandingProductPreview";
 import {
   RevealGroup,
@@ -96,10 +97,16 @@ export function LandingPage() {
         />
         <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-14 items-center">
           <div>
+            <div className="flex items-center gap-3">
+              <LogoMark className="w-10 h-10" bare />
+              <span className="font-serif text-lg leading-none tracking-tight text-ink">
+                Email Triage
+              </span>
+            </div>
             <p className="eyebrow text-accent">Morning brief for founders</p>
             <h1
               id="landing-hero-heading"
-              className="font-serif text-display mt-2 text-ink"
+              className="font-serif text-display mt-3 text-ink"
             >
               Your inbox,
               <br />
@@ -261,6 +268,7 @@ export function LandingPage() {
           </RevealGroup>
         </StackSection>
       </div>
+
     </main>
   );
 }
