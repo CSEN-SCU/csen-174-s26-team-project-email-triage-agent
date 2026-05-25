@@ -296,8 +296,8 @@ footer {
 
   .stack-section {
     position: sticky;
-    top: 3.5rem; /* below LandingNav (h-14) */
-    min-height: calc(100dvh - 3.5rem);
+    top: 4.5rem; /* below shared floating header pill */
+    min-height: calc(100dvh - 4.5rem);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -308,7 +308,7 @@ footer {
 
   @supports not (height: 100dvh) {
     .stack-section {
-      min-height: calc(100vh - 3.5rem);
+      min-height: calc(100vh - 4.5rem);
     }
   }
 
