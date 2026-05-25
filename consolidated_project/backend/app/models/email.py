@@ -60,3 +60,8 @@ class TriageDigest(BaseModel):
     act_today: list[TriageResult]
     decide_this_week: list[TriageResult]
     fyi: list[TriageResult]
+
+
+class SendReplyPayload(BaseModel):
+    email_id: str = Field(min_length=1)
+    body: str = Field(min_length=1, max_length=100_000)
