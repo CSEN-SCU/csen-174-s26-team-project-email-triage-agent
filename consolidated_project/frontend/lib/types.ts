@@ -73,3 +73,22 @@ export interface TriageDigest {
   decide_this_week: TriageResult[];
   fyi: TriageResult[];
 }
+
+export interface SendResult {
+  id: string;
+  thread_id: string;
+  status: string;
+}
+
+export interface DraftResult {
+  draft_id: string;
+  status: string;
+}
+
+export type SubmitStatus =
+  | "idle"
+  | "sending"
+  | "saving"
+  | "sent"
+  | "saved"
+  | "error";

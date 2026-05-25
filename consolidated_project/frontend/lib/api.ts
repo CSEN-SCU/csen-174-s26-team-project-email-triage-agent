@@ -1,5 +1,7 @@
 import type {
+  DraftResult,
   Email,
+  SendResult,
   StageEvent,
   TriageDigest,
   TriageResult,
@@ -42,6 +44,26 @@ export const api = {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ user_context: userContext }),
+      })
+    );
+  },
+
+  async sendReply(emailId: string, body: string): Promise<SendResult> {
+    return json(
+      await fetch("/api/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email_id: emailId, body }),
+      })
+    );
+  },
+
+  async saveDraft(emailId: string, body: string): Promise<DraftResult> {
+    return json(
+      await fetch("/api/draft", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email_id: emailId, body }),
       })
     );
   },

@@ -69,9 +69,7 @@ async def get_emails_by_ids(ids: list[str]) -> list[Email]:
             raise UnknownEmailIdsError(missing)
         return [by_id[i] for i in ids]
     async with factory() as session:
-        result = await session.scalars(
-            select(EmailRow).where(EmailRow.id.in_(ids))
-        )
+        result = await session.scalars(select(EmailRow).where(EmailRow.id.in_(ids)))
         rows = result.all()
         by_id = {r.id: r for r in rows}
         missing = [i for i in ids if i not in by_id]

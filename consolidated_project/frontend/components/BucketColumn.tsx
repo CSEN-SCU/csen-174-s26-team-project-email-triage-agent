@@ -52,6 +52,7 @@ export function BucketColumn({
   empty,
   eyebrow,
   defaultExpanded = true,
+  canSend = false,
 }: {
   title: string;
   subtitle: string;
@@ -62,6 +63,8 @@ export function BucketColumn({
   eyebrow: string;
   /** FYI defaults collapsed; Act / Decide stay open. */
   defaultExpanded?: boolean;
+  /** When false, draft Send/Save buttons are disabled (demo mode). */
+  canSend?: boolean;
 }) {
   const styles = ACCENT_STYLES[accent];
   const headingId = useId();
@@ -149,6 +152,7 @@ export function BucketColumn({
                     result={r}
                     email={emails[r.email_id]}
                     accent={accent}
+                    canSend={canSend}
                   />
                 </div>
               ))}
