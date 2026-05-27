@@ -5,3 +5,4 @@
 !.env.example
 !.env*.example
 /consolidated_project/docs/*
+notion/*
