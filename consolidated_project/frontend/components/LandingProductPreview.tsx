@@ -131,20 +131,20 @@ export function LandingProductPreview() {
 
   return (
     <div
-      className="landing-preview-reel relative w-full max-w-lg mx-auto lg:mx-0 lg:ml-auto pointer-events-none select-none"
+      className="landing-preview-reel relative w-full pointer-events-none select-none"
       role="img"
       aria-label={`Preview of the triage dashboard cycling through ${PREVIEW_SLIDES[activeIndex].label}, Decide this week, and FYI buckets with sample emails`}
     >
-      <div className="rounded-2xl border border-line bg-surface shadow-edge-lg ring-1 ring-ink/5 overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-line bg-paper-deep">
-          <span className="w-2.5 h-2.5 rounded-full bg-accent/80" />
+      <div className="rounded-card border border-hairline bg-canvas overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline bg-surface">
+          <span className="w-2.5 h-2.5 rounded-full bg-act/80" />
           <span className="w-2.5 h-2.5 rounded-full bg-decide/80" />
-          <span className="w-2.5 h-2.5 rounded-full bg-line-strong" />
-          <span className="ml-2 eyebrow text-muted truncate">
+          <span className="w-2.5 h-2.5 rounded-full bg-hairline-strong" />
+          <span className="ml-2 eyebrow text-steel truncate">
             Email Triage · demo inbox
           </span>
         </div>
-        <div className="p-3 sm:p-4 bg-paper">
+        <div className="p-3 sm:p-4 bg-canvas">
           <div className="flex items-center gap-2 mb-4">
             {PREVIEW_SLIDES.map((slide, index) => {
               const active = index === activeIndex;
@@ -153,7 +153,7 @@ export function LandingProductPreview() {
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span
                       className={`text-[10px] uppercase tracking-[0.18em] truncate transition-colors duration-300 ${
-                        active ? "text-ink" : "text-muted"
+                        active ? "text-ink" : "text-steel"
                       }`}
                     >
                       {slide.label}
@@ -162,8 +162,8 @@ export function LandingProductPreview() {
                       className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
                         slide.accent === "act"
                           ? active
-                            ? "bg-accent"
-                            : "bg-accent/20"
+                            ? "bg-act"
+                            : "bg-act/20"
                           : slide.accent === "decide"
                             ? active
                               ? "bg-decide"
@@ -174,11 +174,11 @@ export function LandingProductPreview() {
                       }`}
                     />
                   </div>
-                  <div className="h-1 rounded-full bg-paper-deep overflow-hidden">
+                  <div className="h-1 rounded-full bg-surface overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ease-out ${
                         slide.accent === "act"
-                          ? "bg-accent/85"
+                          ? "bg-act/85"
                           : slide.accent === "decide"
                             ? "bg-decide/85"
                             : "bg-fyi/85"
@@ -191,7 +191,7 @@ export function LandingProductPreview() {
           </div>
 
           <div className="relative h-[28rem] sm:h-[30rem] [perspective:1600px]">
-            <div className="absolute inset-0 rounded-[1.5rem] bg-gradient-to-b from-paper-deep/65 via-transparent to-paper pointer-events-none" />
+            <div className="absolute inset-0 rounded-card bg-gradient-to-b from-surface/65 via-transparent to-canvas pointer-events-none" />
             {PREVIEW_SLIDES.map((slide, index) => {
               const position = reelPosition(index, activeIndex, PREVIEW_SLIDES.length);
               const active = position === 0;
@@ -220,7 +220,7 @@ export function LandingProductPreview() {
                       aria-hidden
                       className={`absolute inset-0 rounded-[1.35rem] transition-opacity duration-700 ${
                         active ? "opacity-0" : "opacity-100"
-                      } bg-gradient-to-b from-paper/25 via-paper/12 to-paper/80`}
+                      } bg-gradient-to-b from-canvas/25 via-canvas/12 to-canvas/80`}
                     />
                     <BucketColumn
                       title={slide.label}
@@ -245,7 +245,7 @@ export function LandingProductPreview() {
                 <div
                   key={slide.key}
                   className={`h-1.5 rounded-full transition-all duration-500 ${
-                    active ? "w-10 bg-ink/80" : "w-4 bg-line-strong"
+                    active ? "w-10 bg-ink/80" : "w-4 bg-hairline-strong"
                   }`}
                 />
               );
@@ -253,10 +253,6 @@ export function LandingProductPreview() {
           </div>
         </div>
       </div>
-      <div
-        aria-hidden
-        className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-paper to-transparent rounded-b-2xl"
-      />
     </div>
   );
 }

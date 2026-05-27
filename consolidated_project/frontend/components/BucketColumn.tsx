@@ -38,7 +38,7 @@ const ACCENT_STYLES: Record<
   Accent,
   { tone: string; dot: string; eyebrow: string }
 > = {
-  act: { tone: "text-accent", dot: "bg-accent", eyebrow: "text-accent" },
+  act: { tone: "text-act", dot: "bg-act", eyebrow: "text-act" },
   decide: { tone: "text-decide", dot: "bg-decide", eyebrow: "text-decide" },
   fyi: { tone: "text-fyi", dot: "bg-fyi", eyebrow: "text-fyi" },
 };
@@ -95,7 +95,7 @@ export function BucketColumn({
           aria-expanded={expanded}
           aria-controls={panelId}
           onClick={() => setExpanded((open) => !open)}
-          className="w-full text-left rounded-lg -mx-1 px-1 py-0.5 hover:bg-paper-deep/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper transition-colors duration-150"
+          className="w-full text-left rounded-lg -mx-1 px-1 py-0.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas transition-colors duration-150"
         >
           <div className="flex items-center gap-2 min-h-[1.125rem]">
             <span
@@ -117,7 +117,7 @@ export function BucketColumn({
           </div>
           <h2
             id={headingId}
-            className="font-serif text-2xl mt-1.5 text-ink leading-tight pr-6"
+            className="text-heading-3 mt-1.5 text-ink leading-tight pr-6"
           >
             {title}
           </h2>
@@ -135,7 +135,7 @@ export function BucketColumn({
         className="px-5 pb-5"
       >
         {total === 0 ? (
-          <p className="border border-dashed border-line rounded-xl py-9 px-4 text-center text-sm text-muted leading-relaxed">
+          <p className="border border-dashed border-hairline rounded-card py-9 px-4 text-center text-sm text-steel leading-relaxed">
             {empty}
           </p>
         ) : (
@@ -165,7 +165,7 @@ export function BucketColumn({
                 onClick={() =>
                   setVisibleCount((n) => Math.min(n + PAGE_SIZE, total))
                 }
-                className="mt-3 w-full rounded-xl border border-line bg-white/60 px-4 py-3 text-sm font-medium text-muted hover:text-ink hover:border-line-strong hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper active:bg-surface transition-colors duration-150"
+                className="mt-3 w-full rounded-notion border border-hairline bg-canvas px-4 py-3 text-sm font-medium text-steel hover:text-ink hover:border-hairline-strong hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas active:bg-surface transition-colors duration-150"
               >
                 {moreItemsLabel(remaining)}
               </button>

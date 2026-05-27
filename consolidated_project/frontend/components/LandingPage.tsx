@@ -3,14 +3,8 @@
 import { HeroRotatingText } from "@/components/HeroRotatingText";
 import { LandingCtas } from "@/components/landing/LandingCtas";
 import { LandingProductPreview } from "@/components/LandingProductPreview";
-import {
-  RevealGroup,
-  RevealItem,
-  RevealOnScroll,
-} from "@/components/RevealOnScroll";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 const HERO_ROTATION_OPTIONS = [
@@ -24,47 +18,47 @@ const BUCKETS = [
   {
     eyebrow: "01 · now",
     title: "Act today",
-    body: "Time-critical threads — reply or decide before the day slips.",
-    accent: "border-l-accent bg-accent/5",
+    body: "Time-critical threads. Reply or decide before the day slips.",
   },
   {
     eyebrow: "02 · this week",
     title: "Decide this week",
     body: "Important, not urgent. Block time instead of letting it linger.",
-    accent: "border-l-decide bg-decide/5",
   },
   {
     eyebrow: "03 · fyi",
     title: "FYI",
     body: "Context you might skim. Collapsed by default so noise stays quiet.",
-    accent: "border-l-fyi bg-fyi/5",
   },
 ] as const;
 
-function StackSection({
-  children,
-  className = "",
-  zIndex,
-  id,
-  label,
-}: {
-  children: ReactNode;
-  className?: string;
-  zIndex: number;
-  id: string;
-  label: string;
-}) {
-  return (
-    <section
-      id={id}
-      aria-label={label}
-      className={`stack-section ${className}`}
-      style={{ zIndex }}
-    >
-      <div className="w-full max-w-6xl mx-auto px-6 py-16 md:py-20">{children}</div>
-    </section>
-  );
-}
+const BENTO_CARDS = [
+  {
+    eyebrow: "Context first",
+    title: "Every priority decision starts with your current reality.",
+    body: "Company stage, pipeline, investors, customers, and goals become the lens for triage.",
+    className: "md:col-span-2 lg:col-span-3",
+  },
+  {
+    eyebrow: "No summary wall",
+    title: "A digest that makes decisions.",
+    body: "The output is a small set of buckets, not another paragraph to parse.",
+    className: "lg:col-span-2",
+  },
+  {
+    eyebrow: "Quiet by default",
+    title: "FYI stays out of the way.",
+    body: "Low-signal messages stay collapsed so attention goes to work that needs you.",
+    className: "lg:col-span-2",
+  },
+] as const;
+
+const SIGNALS = [
+  "Investor follow-up",
+  "Pilot redline",
+  "Customer outage",
+  "Vendor receipt",
+] as const;
 
 export function LandingPage() {
   const { status } = useSession();
@@ -84,8 +78,8 @@ export function LandingPage() {
 
   if (status === "loading" || status === "authenticated") {
     return (
-      <main className="max-w-6xl mx-auto px-6 py-32 text-center">
-        <p className="text-sm text-muted" role="status" aria-live="polite">
+      <main className="max-w-3xl mx-auto px-6 py-32 text-center">
+        <p className="text-sm text-steel" role="status" aria-live="polite">
           Loading…
         </p>
       </main>
@@ -93,185 +87,130 @@ export function LandingPage() {
   }
 
   return (
-    <main id="main-content">
-      <section
-        aria-labelledby="landing-hero-heading"
-        className="relative min-h-[calc(100dvh-3.5rem)] max-w-6xl mx-auto px-6 pt-16 pb-20 md:pt-20 md:pb-24 flex flex-col justify-center"
-      >
-        <div
-          aria-hidden
-          className="absolute -top-8 left-0 right-0 h-[320px] bg-atmosphere blur-2xl opacity-90 pointer-events-none"
-        />
-        <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-14 items-center">
-          <div>
-            <p className="eyebrow text-accent">Morning brief for founders</p>
-            <h1
-              id="landing-hero-heading"
-              className="font-serif text-display mt-2 text-ink"
-            >
-              Your inbox,
-              <br />
-              <em className="text-accent">
-                with a <HeroRotatingText phrases={HERO_ROTATION_OPTIONS} />
-              </em>
-            </h1>
-            <p className="text-base text-muted mt-4 max-w-xl leading-relaxed">
-              Not another summary wall. Email Triage reads your deals and goals,
-              then streams every message into three buckets so you know what
-              actually needs you today.
-            </p>
-            <div className="hairline mt-6 max-w-sm" />
-            <LandingCtas
-              busy={busy}
-              onConnect={connectGmail}
-              className="mt-8"
-            />
-            <p className="mt-4 text-xs text-muted max-w-md leading-relaxed">
-              Gmail access is read-only for now — we pull messages to triage, not
-              send on your behalf. Compose and send scopes come later.
-            </p>
-          </div>
+    <main id="main-content" className="bg-canvas">
+      <section aria-labelledby="landing-hero-heading" className="overflow-hidden">
+        <div className="mx-auto max-w-7xl px-6 pb-16 pt-16 md:pb-24 md:pt-24">
+          <div className="grid gap-4 lg:grid-cols-12">
+            <div className="bento-card bento-rise lg:col-span-5 lg:row-span-2 p-7 md:p-9">
+              <p className="eyebrow text-steel">Morning brief for founders</p>
+              <h1
+                id="landing-hero-heading"
+                className="mt-4 text-hero-display text-ink tracking-tight"
+              >
+                Your inbox, with a{" "}
+                <span className="text-ink">
+                  <HeroRotatingText phrases={HERO_ROTATION_OPTIONS} />
+                </span>
+              </h1>
+              <p className="mt-5 max-w-xl text-[17px] leading-[1.65] text-slate">
+                Email Triage turns a noisy inbox into a focused daily brief:
+                what needs action, what needs a decision, and what can wait.
+              </p>
+              <LandingCtas busy={busy} onConnect={connectGmail} className="mt-8" />
+              <p className="mt-5 max-w-md text-sm leading-relaxed text-steel">
+                Read-only Gmail access. Demo mode includes a seeded founder inbox.
+              </p>
+            </div>
 
-          <div className="mt-8 lg:mt-0">
-            <LandingProductPreview />
+            <div className="bento-card bento-rise bento-rise-delay-1 lg:col-span-7 p-3 md:p-4">
+              <LandingProductPreview />
+            </div>
+
+            <div className="bento-card bento-rise bento-rise-delay-2 lg:col-span-3 p-6">
+              <p className="eyebrow text-steel">Signal</p>
+              <div className="mt-6 space-y-3">
+                {SIGNALS.map((signal, index) => (
+                  <div
+                    key={signal}
+                    className="flex items-center gap-3 rounded-notion border border-hairline bg-canvas px-3 py-2.5"
+                  >
+                    <span className="grid h-6 w-6 place-items-center rounded-full bg-surface text-[11px] font-medium text-charcoal">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-medium text-ink">{signal}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bento-card bento-rise bento-rise-delay-3 lg:col-span-4 p-6">
+              <p className="eyebrow text-steel">Outcome</p>
+              <p className="mt-4 text-heading-3 text-ink">A smaller morning list.</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate">
+                The agent filters for decisions, replies, and useful context so the
+                day starts with a clear queue.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="landing-stack">
-        <StackSection
-          id="landing-problem"
-          label="The problem"
-          className="bg-paper-deep"
-          zIndex={10}
-        >
-          <RevealGroup>
-            <RevealItem>
-              <p className="eyebrow text-muted">The problem</p>
-            </RevealItem>
-            <RevealItem>
-              <h2 className="font-serif text-hero mt-2 max-w-2xl text-ink leading-tight">
-                Generic AI treats every email like the last one.
-              </h2>
-            </RevealItem>
-            <RevealItem>
-              <p className="text-base text-muted mt-4 max-w-xl leading-relaxed">
-                Founders don&apos;t need another digest. You need priority that
-                respects your pipeline, your runway conversations, and what you
-                already decided to ignore.
-              </p>
-            </RevealItem>
-          </RevealGroup>
-        </StackSection>
-
-        <StackSection
-          id="landing-how"
-          label="How it works"
-          className="bg-paper"
-          zIndex={20}
-        >
-          <RevealGroup>
-            <RevealItem>
-              <p className="eyebrow text-accent">How it works</p>
-            </RevealItem>
-            <RevealItem>
-              <h2 className="font-serif text-hero mt-2 text-ink">
-                Three buckets. One clear morning.
-              </h2>
-            </RevealItem>
-            <RevealItem>
-              <ul className="mt-10 grid gap-4 md:grid-cols-3">
-                {BUCKETS.map((b) => (
-                  <li
-                    key={b.title}
-                    className={`surface card-edge border-l-4 pl-5 py-5 transition-shadow duration-150 hover:shadow-edge ${b.accent}`}
-                  >
-                    <p className="eyebrow text-muted">{b.eyebrow}</p>
-                    <h3 className="font-serif text-xl mt-1 text-ink">{b.title}</h3>
-                    <p className="text-sm text-muted mt-2 leading-relaxed">
-                      {b.body}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </RevealItem>
-          </RevealGroup>
-        </StackSection>
-
-        <StackSection
-          id="landing-context"
-          label="Your context"
-          className="bg-paper-deep"
-          zIndex={30}
-        >
-          <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
-            <RevealGroup>
-              <RevealItem>
-                <p className="eyebrow text-accent">Your context</p>
-              </RevealItem>
-              <RevealItem>
-                <h2 className="font-serif text-hero mt-2 text-ink">
-                  It adapts to you — not a template.
-                </h2>
-              </RevealItem>
-              <RevealItem>
-                <p className="text-base text-muted mt-4 leading-relaxed">
-                  Set who you are, what you&apos;re building, and what matters this
-                  quarter. The agent scores every thread against that lens before it
-                  lands in a bucket.
-                </p>
-              </RevealItem>
-            </RevealGroup>
-            <RevealOnScroll delay={80}>
-              <div className="surface card-edge p-6 font-mono text-xs text-ink-soft leading-relaxed">
-                <p className="eyebrow text-muted mb-3">Example context</p>
-                <p>Building: B2B workflow tool, seed stage</p>
-                <p className="mt-2">Focus: enterprise pilots + Q2 pipeline</p>
-                <p className="mt-2 text-muted">
-                  → Investor updates → Decide this week
-                </p>
-                <p className="text-muted">→ Customer outage → Act today</p>
-              </div>
-            </RevealOnScroll>
+      <section aria-labelledby="bento-story-heading" className="border-t border-hairline">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+          <div className="max-w-2xl">
+            <p className="eyebrow text-steel">How it works</p>
+            <h2 id="bento-story-heading" className="mt-3 text-heading-2 text-ink">
+              Built for triage, not browsing.
+            </h2>
+            <p className="mt-4 text-[17px] leading-[1.65] text-slate">
+              The page follows the same minimal system throughout: neutral type,
+              hairline borders, readable spacing, and motion that clarifies instead
+              of competing for attention.
+            </p>
           </div>
-        </StackSection>
 
-        <StackSection
-          id="landing-cta"
-          label="Get started"
-          className="bg-ink text-paper border-t-0 shadow-[0_-28px_56px_-20px_rgba(15,17,21,0.35)]"
-          zIndex={40}
-        >
-          <RevealGroup className="text-center max-w-lg mx-auto">
-            <RevealItem>
-              <h2 className="font-serif text-hero text-paper">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {BENTO_CARDS.map((card, index) => (
+              <article
+                key={card.title}
+                className={`bento-card bento-rise p-6 md:p-7 ${card.className}`}
+                style={{ animationDelay: `${index * 90}ms` }}
+              >
+                <p className="eyebrow text-steel">{card.eyebrow}</p>
+                <h3 className="mt-4 text-heading-4 text-ink">{card.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate">{card.body}</p>
+              </article>
+            ))}
+
+            <article className="bento-card bento-rise md:col-span-2 lg:col-span-4 p-6 md:p-7">
+              <div className="grid gap-4 md:grid-cols-3">
+                {BUCKETS.map((bucket) => (
+                  <div
+                    key={bucket.title}
+                    className="rounded-card border border-hairline bg-canvas p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-card"
+                  >
+                    <p className="eyebrow text-steel">{bucket.eyebrow}</p>
+                    <h3 className="mt-2 text-base font-semibold text-ink">
+                      {bucket.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate">
+                      {bucket.body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="landing-cta-heading" className="border-t border-hairline">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+          <div className="bento-card bento-cta p-7 md:p-10">
+            <div className="max-w-2xl">
+              <p className="eyebrow text-steel">Get started</p>
+              <h2 id="landing-cta-heading" className="mt-3 text-heading-2 text-ink">
                 Start with clarity, not clutter.
               </h2>
-            </RevealItem>
-            <RevealItem>
-              <p className="text-paper/70 mt-3 text-sm leading-relaxed">
-                Connect your inbox or try the seeded demo — same triage flow, no
+              <p className="mt-4 text-[17px] leading-[1.65] text-slate">
+                Connect your inbox or try the seeded demo. Same triage flow, no
                 credit card.
               </p>
-            </RevealItem>
-            <RevealItem>
-              <div className="mt-8 flex justify-center">
-                <LandingCtas
-                  busy={busy}
-                  onConnect={connectGmail}
-                  variant="dark"
-                />
-              </div>
-            </RevealItem>
-            <RevealItem>
-              <p className="mt-4 text-xs text-paper/50">
-                Read-only Gmail · demo uses a seeded founder inbox
-              </p>
-            </RevealItem>
-          </RevealGroup>
-        </StackSection>
-      </div>
-
+              <LandingCtas busy={busy} onConnect={connectGmail} className="mt-8" />
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

@@ -32,25 +32,23 @@ export function ContextCard({ onSaved }: { onSaved?: (ctx: string) => void }) {
 
   return (
     <section className="surface card-edge p-6">
-      <p className="text-[11px] uppercase tracking-eyebrow text-accent">
-        Context
-      </p>
-      <h2 className="font-serif text-2xl mt-1 leading-tight">
+      <p className="eyebrow text-steel">Context</p>
+      <h2 className="text-heading-3 mt-1 leading-tight text-ink">
         What are you working on right now?
       </h2>
-      <p className="text-sm text-muted mt-1">
+      <p className="text-sm text-slate mt-1">
         Every priority decision is grounded in this. One paragraph is enough.
       </p>
 
       <textarea
-        className="w-full min-h-[120px] mt-4 border border-line rounded-xl p-3.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-accent/40 bg-paper-deep/40 placeholder:text-muted/70"
+        className="w-full min-h-[120px] mt-4 border border-hairline-strong rounded-notion p-3.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ink/20 bg-canvas placeholder:text-muted"
         placeholder="e.g. AE selling a Series B observability platform. ICP: 200-2k eng orgs. Top Q4 deals: Acme (POC), Globex (procurement), Initech (renewal + expansion)."
         value={value}
         onChange={(e) => setValue(e.target.value)}
         disabled={!loaded}
       />
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-[11px] text-muted">
+        <span className="text-[11px] text-steel">
           {savedAt
             ? `saved · ${new Date(savedAt).toLocaleTimeString()}`
             : loaded
@@ -60,7 +58,7 @@ export function ContextCard({ onSaved }: { onSaved?: (ctx: string) => void }) {
         <button
           onClick={save}
           disabled={saving || !loaded}
-          className="px-4 py-2 rounded-full bg-ink text-paper text-xs font-medium hover:bg-ink-soft transition disabled:opacity-50"
+          className="btn-primary text-xs !h-9 !px-4 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save context"}
         </button>

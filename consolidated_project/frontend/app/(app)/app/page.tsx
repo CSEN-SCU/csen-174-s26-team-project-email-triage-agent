@@ -118,21 +118,13 @@ export default function Home() {
   return (
     <main className="max-w-7xl mx-auto px-6 pt-12 pb-20">
       <header className="relative mb-10">
-        <div
-          aria-hidden
-          className="absolute -top-10 -left-10 -right-10 h-[260px] bg-atmosphere blur-2xl opacity-90 pointer-events-none"
-        />
         <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[11px] uppercase tracking-eyebrow text-accent">
-              Email triage agent
-            </p>
-            <h1 className="font-serif text-display mt-2 text-ink">
-              Your inbox,
-              <br className="hidden sm:block" />{" "}
-              <em className="text-accent">with a point of view.</em>
+            <p className="eyebrow text-steel">Email triage agent</p>
+            <h1 className="text-display-lg mt-2 text-ink tracking-tight">
+              Your inbox, with a point of view.
             </h1>
-            <p className="text-base text-muted mt-4 max-w-xl leading-relaxed">
+            <p className="text-[15px] text-slate mt-4 max-w-xl leading-relaxed">
               Doesn’t just summarize — it prioritizes. The agent reads your
               context, then streams every message into one of three buckets so
               you only see what matters now.
@@ -141,13 +133,13 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col items-start md:items-end gap-3">
-            <span className="text-[11px] uppercase tracking-eyebrow text-muted">
+            <span className="eyebrow text-steel">
               Source · {sourceLabel}
             </span>
             <button
               onClick={runTriage}
               disabled={running || emails.length === 0}
-              className="group inline-flex items-center gap-2 px-5 py-3 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent/90 transition disabled:opacity-50 shadow-edge"
+              className="btn-primary group disabled:opacity-50"
             >
               {running
                 ? total
@@ -174,14 +166,12 @@ export default function Home() {
           <ContextCard />
           <section className="surface card-edge p-5">
             <div className="flex items-baseline justify-between">
-              <p className="text-[11px] uppercase tracking-eyebrow text-accent">
-                Inbox
-              </p>
+              <p className="eyebrow text-steel">Inbox</p>
               <span className="text-xs text-muted tabular-nums">
                 {emailsLoading ? "…" : emails.length}
               </span>
             </div>
-            <h3 className="font-serif text-xl mt-1 leading-tight">
+            <h3 className="text-heading-4 mt-1 leading-tight text-ink">
               {authed ? "Your latest messages" : "Seeded founder inbox"}
             </h3>
             <p className="text-xs text-muted mt-1">
@@ -189,12 +179,12 @@ export default function Home() {
                 ? "Pulled from Gmail (read-only). The agent sees what you see."
                 : "Connect Gmail above to run triage against your real inbox."}
             </p>
-            <ul className="mt-4 divide-y divide-line/80 text-sm">
+            <ul className="mt-4 divide-y divide-hairline text-sm">
               {emails.slice(0, 10).map((e) => (
                 <li key={e.id} className="py-2.5">
                   <p className="truncate font-medium text-ink">{e.subject}</p>
                   <p className="text-xs text-muted truncate mt-0.5">
-                    <span className="text-ink-soft">{e.sender_name}</span>{" "}
+                    <span className="text-charcoal">{e.sender_name}</span>{" "}
                     · {new Date(e.received_at).toLocaleDateString()}
                   </p>
                 </li>
@@ -221,11 +211,11 @@ export default function Home() {
           )}
 
           {!running && done === 0 && !error && (
-            <div className="surface-quiet border border-dashed border-line p-10 text-center rounded-2xl">
-              <p className="font-serif text-2xl mb-1">Ready when you are.</p>
-              <p className="text-sm text-muted max-w-md mx-auto">
+            <div className="surface-quiet border border-dashed border-hairline p-10 text-center rounded-card">
+              <p className="text-heading-3 mb-1 text-ink">Ready when you are.</p>
+              <p className="text-sm text-slate max-w-md mx-auto">
                 Set your context on the left, then click{" "}
-                <em className="text-ink-soft">Run triage</em>. Results stream
+                <em className="text-charcoal not-italic">Run triage</em>. Results stream
                 in as the agent finishes each email.
               </p>
             </div>
@@ -233,16 +223,16 @@ export default function Home() {
 
           {pending.length > 0 && (
             <div className="surface card-edge p-4">
-              <p className="text-[11px] uppercase tracking-eyebrow text-accent mb-2">
+              <p className="eyebrow text-steel mb-2">
                 Classifying {pending.length}
               </p>
               <ul className="text-sm space-y-1.5">
                 {pending.map((p) => (
                   <li
                     key={p.email_id}
-                    className="flex items-center gap-2 text-ink-soft"
+                    className="flex items-center gap-2 text-charcoal"
                   >
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink animate-pulse-soft" />
                     <span className="truncate">
                       {emailsById[p.email_id]?.subject ?? p.email_id}
                     </span>

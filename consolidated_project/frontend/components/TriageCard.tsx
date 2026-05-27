@@ -30,7 +30,7 @@ function PriorityBar({ value }: { value: number }) {
   const filled = Math.max(2, Math.min(100, value));
   return (
     <div
-      className="relative h-1 w-16 rounded-full bg-line overflow-hidden"
+      className="relative h-1 w-16 rounded-full bg-hairline overflow-hidden"
       aria-label={`priority ${value}`}
     >
       <span
@@ -52,8 +52,8 @@ function StagePill({ stage, done }: { stage?: Stage; done?: boolean }) {
           ? "drafting reply"
           : "classifying";
   return (
-    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-eyebrow text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-      <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" />
+    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-eyebrow text-steel bg-surface px-2 py-0.5 rounded-notion border border-hairline">
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink animate-pulse-soft" />
       {label}
     </span>
   );
@@ -79,10 +79,10 @@ export function TriageCard({
 
   const accentTone =
     accent === "act"
-      ? "text-accent"
+      ? "text-act"
       : accent === "decide"
         ? "text-decide"
-        : "text-ink-soft";
+        : "text-stone";
 
   function openDraft() {
     if (!expanded && submitStatus === "idle") {
@@ -129,7 +129,7 @@ export function TriageCard({
             {signal && (
               <>
                 <PriorityBar value={signal.priority} />
-                <span className="uppercase tracking-eyebrow text-[10px] text-ink-soft">
+                <span className="uppercase tracking-eyebrow text-[10px] text-charcoal">
                   {INTENT_LABEL[signal.intent] ?? signal.intent}
                 </span>
                 <span aria-hidden>·</span>
@@ -140,12 +140,12 @@ export function TriageCard({
             )}
             <StagePill stage={result.stage} done={result.done} />
           </div>
-          <h3 className="font-serif text-lg leading-snug text-ink truncate">
+          <h3 className="text-heading-4 leading-snug text-ink truncate">
             {email?.subject ?? result.email_id}
           </h3>
           {email && (
             <p className="text-xs text-muted mt-1 truncate">
-              <span className="text-ink-soft">{email.sender_name}</span>{" "}
+              <span className="text-charcoal">{email.sender_name}</span>{" "}
               <span className="text-muted/70">·</span>{" "}
               <span className="font-mono text-[11px]">{email.sender_email}</span>
             </p>
@@ -154,7 +154,7 @@ export function TriageCard({
       </header>
 
       {result.summary ? (
-        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+        <p className="mt-3 text-[15px] leading-relaxed text-charcoal">
           {result.summary}
         </p>
       ) : (
@@ -172,7 +172,7 @@ export function TriageCard({
       {result.actions && result.actions.length > 0 && (
         <ul className="mt-4 space-y-1.5">
           {result.actions.map((a, i) => (
-            <li key={i} className="text-sm flex items-start gap-2 text-ink-soft">
+            <li key={i} className="text-sm flex items-start gap-2 text-charcoal">
               <span className={`mt-[2px] ${accentTone}`} aria-hidden>
                 ▸
               </span>
@@ -188,7 +188,7 @@ export function TriageCard({
       )}
 
       {hasDraft && (
-        <div className="mt-4 border-t border-line pt-3">
+        <div className="mt-4 border-t border-hairline pt-3">
           <button
             onClick={openDraft}
             className={`text-sm hover:underline ${accentTone}`}
@@ -198,7 +198,7 @@ export function TriageCard({
           {expanded && (
             <div className="mt-3 animate-fade-in">
               {locked ? (
-                <div className="bg-paper-deep/60 border border-line rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed text-ink-soft font-serif">
+                <div className="bg-surface border border-hairline rounded-notion p-4 text-sm whitespace-pre-wrap leading-relaxed text-charcoal">
                   {body}
                 </div>
               ) : (
@@ -208,7 +208,7 @@ export function TriageCard({
                   disabled={inFlight}
                   rows={6}
                   aria-label="Edit draft reply"
-                  className="w-full bg-paper-deep/60 border border-line rounded-lg p-4 text-sm leading-relaxed text-ink-soft font-serif resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:opacity-60"
+                  className="w-full bg-surface border border-hairline rounded-notion p-4 text-sm leading-relaxed text-charcoal resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 disabled:opacity-60"
                 />
               )}
 
@@ -222,14 +222,14 @@ export function TriageCard({
                     <button
                       onClick={handleSend}
                       disabled={!canSubmit}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent/90 transition disabled:opacity-50 shadow-edge"
+                      className="btn-primary disabled:opacity-50"
                     >
                       {submitStatus === "sending" ? "Sending…" : "Send"}
                     </button>
                     <button
                       onClick={handleSaveDraft}
                       disabled={!canSubmit}
-                      className="inline-flex items-center px-4 py-2 rounded-full border border-line text-sm font-medium text-ink-soft hover:bg-paper-deep/60 transition disabled:opacity-50"
+                      className="btn-secondary disabled:opacity-50"
                     >
                       {submitStatus === "saving" ? "Saving…" : "Save as Gmail draft"}
                     </button>

@@ -27,7 +27,7 @@ export function AuthChip() {
   if (status === "loading") {
     return (
       <div
-        className="h-9 w-36 rounded-full border border-line/80 bg-white/40 animate-pulse-soft"
+        className="h-9 w-36 rounded-notion border border-hairline bg-surface animate-pulse-soft"
         aria-hidden
       />
     );
@@ -42,7 +42,7 @@ export function AuthChip() {
           setBusy(true);
           await signIn("google", { callbackUrl: "/app" });
         }}
-        className="inline-flex items-center gap-2 h-9 px-3.5 rounded-full bg-ink text-paper text-xs font-medium tracking-tight hover:bg-ink-soft transition disabled:opacity-60"
+        className="inline-flex items-center gap-2 h-9 px-3.5 rounded-notion bg-ink-deep text-on-dark text-xs font-medium tracking-tight hover:bg-charcoal transition disabled:opacity-60"
       >
         <GoogleGlyph />
         Connect Gmail
@@ -59,12 +59,12 @@ export function AuthChip() {
       {refreshError && (
         <span
           title={refreshError}
-          className="text-[10px] uppercase tracking-eyebrow text-accent"
+          className="eyebrow text-warning"
         >
           re-auth
         </span>
       )}
-      <div className="inline-flex items-center gap-2 h-9 pl-1 pr-3 rounded-full border border-line bg-white/70 shadow-ring">
+      <div className="inline-flex items-center gap-2 h-9 pl-1 pr-3 rounded-notion border border-hairline bg-canvas shadow-ring">
         {session.user.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -74,17 +74,17 @@ export function AuthChip() {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <span className="w-7 h-7 rounded-full bg-accent/15 text-accent grid place-items-center text-xs font-medium">
+          <span className="w-7 h-7 rounded-full bg-surface text-charcoal grid place-items-center text-xs font-medium border border-hairline">
             {initial}
           </span>
         )}
-        <span className="text-xs text-ink-soft max-w-[160px] truncate">
+        <span className="text-xs text-charcoal max-w-[160px] truncate">
           {session.user.email ?? name}
         </span>
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="ml-1 text-[11px] uppercase tracking-eyebrow text-muted hover:text-ink transition"
+          className="ml-1 eyebrow text-steel hover:text-ink transition"
         >
           sign out
         </button>
