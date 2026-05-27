@@ -11,17 +11,17 @@ export function HeroRotatingText({
 }: {
   phrases: readonly string[];
 }) {
-  if (phrases.length === 0) return null;
-
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<"idle" | "exiting" | "entering">("idle");
 
   const widestPhrase = useMemo(
     () =>
-      phrases.reduce(
-        (widest, phrase) => (phrase.length > widest.length ? phrase : widest),
-        phrases[0],
-      ),
+      phrases.length > 0
+        ? phrases.reduce(
+            (widest, phrase) => (phrase.length > widest.length ? phrase : widest),
+            phrases[0],
+          )
+        : "",
     [phrases],
   );
 
@@ -54,6 +54,10 @@ export function HeroRotatingText({
     };
   }, [phrases]);
 
+  if (phrases.length === 0) return null;
+
+  const activePhrase = phrases[index % phrases.length];
+
   return (
     <>
       <span className="sr-only">{phrases[0]}</span>
@@ -62,7 +66,7 @@ export function HeroRotatingText({
         className={`hero-rotator is-${phase}`}
       >
         <span className="hero-rotator-measure">{widestPhrase}</span>
-        <span className="hero-rotator-live">{phrases[index]}</span>
+        <span className="hero-rotator-live">{activePhrase}</span>
       </span>
     </>
   );
