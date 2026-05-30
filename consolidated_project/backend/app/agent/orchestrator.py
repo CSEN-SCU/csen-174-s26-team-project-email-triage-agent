@@ -12,6 +12,7 @@ from app.agent.prompts import ORCHESTRATOR_FLOW, SYSTEM_PREAMBLE
 from app.agent.subagents import build_agents
 from app.agent.tools import triage_mcp_server
 from app.auth import gmail
+from app.config import settings
 from app.models.email import Email, TriageResult
 
 logger = logging.getLogger("triage.orchestrator")
@@ -21,6 +22,7 @@ _RESULT_SCHEMA = TriageResult.model_json_schema()
 
 def _build_options() -> ClaudeAgentOptions:
     return ClaudeAgentOptions(
+        model=settings.triage_model,
         system_prompt=f"{SYSTEM_PREAMBLE}\n\n{ORCHESTRATOR_FLOW}",
         agents=build_agents(),
         mcp_servers={"triage": triage_mcp_server},
@@ -43,7 +45,12 @@ def _build_prompt(email: Email, user_context: str, user_email: str) -> str:
 
 async def triage_email(email: Email, user_context: str, token: str | None) -> TriageResult:
     with context.request_context(token):
-        user_email = await gmail.get_user_email(token) if token else ""
+        user_email = ""
+        if token:
+            try:
+                user_email = await gmail.get_user_email(token)
+            except gmail.GmailFetchError:
+                logger.warning("get_user_email failed; proceeding with empty seller email")
         context.set_user_email(user_email)
         prompt = _build_prompt(email, user_context, user_email)
         structured = None
