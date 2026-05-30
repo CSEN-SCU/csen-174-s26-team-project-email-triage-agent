@@ -4,8 +4,7 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import type {
   Email,
-  PartialTriageResult,
-  Stage,
+  TriageResult,
   SubmitStatus,
 } from "@/lib/types";
 import { canSubmitDraft } from "@/lib/triage-helpers";
@@ -41,20 +40,11 @@ function PriorityBar({ value }: { value: number }) {
   );
 }
 
-function StagePill({ stage, done }: { stage?: Stage; done?: boolean }) {
-  if (done) return null;
-  const label =
-    stage === "summarize"
-      ? "summarizing"
-      : stage === "actions"
-        ? "extracting actions"
-        : stage === "draft"
-          ? "drafting reply"
-          : "classifying";
+function LoadingPill() {
   return (
     <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-eyebrow text-steel bg-surface px-2 py-0.5 rounded-notion border border-hairline">
       <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink animate-pulse-soft" />
-      {label}
+      triaging
     </span>
   );
 }
@@ -64,11 +54,14 @@ export function TriageCard({
   email,
   accent = "act",
   canSend = false,
+  loading = false,
 }: {
-  result: PartialTriageResult;
+  result: TriageResult;
   email?: Email;
   accent?: Accent;
   canSend?: boolean;
+  /** True while the agent is still triaging this email. */
+  loading?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [body, setBody] = useState("");
@@ -138,7 +131,7 @@ export function TriageCard({
                 </span>
               </>
             )}
-            <StagePill stage={result.stage} done={result.done} />
+            {loading && <LoadingPill />}
           </div>
           <h3 className="text-heading-4 leading-snug text-ink truncate">
             {email?.subject ?? result.email_id}
@@ -157,11 +150,11 @@ export function TriageCard({
         <p className="mt-3 text-[15px] leading-relaxed text-charcoal">
           {result.summary}
         </p>
-      ) : (
+      ) : loading ? (
         <p className="mt-3 text-sm leading-relaxed text-muted italic">
-          waiting for summary…
+          triaging…
         </p>
-      )}
+      ) : null}
 
       {signal?.reason && (
         <p className="mt-2 text-xs italic text-muted leading-relaxed">
@@ -250,9 +243,6 @@ export function TriageCard({
         </div>
       )}
 
-      {result.error && (
-        <p className="mt-3 text-xs text-red-700">error: {result.error}</p>
-      )}
     </article>
   );
 }
