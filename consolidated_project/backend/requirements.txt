@@ -1,13 +1,14 @@
-fastapi==0.115.5
-uvicorn[standard]==0.32.1
-pydantic==2.10.2
-pydantic-settings==2.6.1
-anthropic==0.40.0
-langgraph==0.2.53
-langchain-anthropic==0.3.0
-langchain-core==0.3.21
+# Web stack bumped to satisfy starlette>=0.49 required transitively by
+# claude-agent-sdk (mcp -> sse-starlette>=1.6.1). Versions below are the
+# resolved, verified-compatible set (FastAPI app + Agent SDK import cleanly).
+fastapi==0.136.3
+uvicorn[standard]==0.48.0
+pydantic==2.13.4
+pydantic-settings>=2.6.1
+anthropic==0.105.2
+claude-agent-sdk==0.2.87
 python-dotenv==1.0.1
-httpx==0.28.0
+httpx==0.28.1
 sqlalchemy==2.0.36
 asyncpg==0.30.0
 greenlet==3.1.1
