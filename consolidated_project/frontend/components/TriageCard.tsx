@@ -40,28 +40,16 @@ function PriorityBar({ value }: { value: number }) {
   );
 }
 
-function LoadingPill() {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-eyebrow text-steel bg-surface px-2 py-0.5 rounded-notion border border-hairline">
-      <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink animate-pulse-soft" />
-      triaging
-    </span>
-  );
-}
-
 export function TriageCard({
   result,
   email,
   accent = "act",
   canSend = false,
-  loading = false,
 }: {
   result: TriageResult;
   email?: Email;
   accent?: Accent;
   canSend?: boolean;
-  /** True while the agent is still triaging this email. */
-  loading?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [body, setBody] = useState("");
@@ -131,7 +119,6 @@ export function TriageCard({
                 </span>
               </>
             )}
-            {loading && <LoadingPill />}
           </div>
           <h3 className="text-heading-4 leading-snug text-ink truncate">
             {email?.subject ?? result.email_id}
@@ -146,15 +133,11 @@ export function TriageCard({
         </div>
       </header>
 
-      {result.summary ? (
+      {result.summary && (
         <p className="mt-3 text-[15px] leading-relaxed text-charcoal">
           {result.summary}
         </p>
-      ) : loading ? (
-        <p className="mt-3 text-sm leading-relaxed text-muted italic">
-          triaging…
-        </p>
-      ) : null}
+      )}
 
       {signal?.reason && (
         <p className="mt-2 text-xs italic text-muted leading-relaxed">

@@ -26,6 +26,8 @@ export default function Home() {
   const [results, setResults] = useState<Record<string, TriageResult>>({});
   // Track email IDs that are currently being triaged (no result yet)
   const [pending, setPending] = useState<Set<string>>(new Set());
+  // Per-email errors keyed by email ID
+  const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
   const [running, setRunning] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +69,7 @@ export default function Home() {
     setError(null);
     setResults({});
     setPending(new Set());
+    setEmailErrors({});
     setRunning(true);
     setTotal(null);
     try {
@@ -85,7 +88,7 @@ export default function Home() {
           });
         },
         onError: (emailId, message) => {
-          setError(`Error triaging ${emailId}: ${message}`);
+          setEmailErrors((prev) => ({ ...prev, [emailId]: message }));
           setPending((prev) => {
             const next = new Set(prev);
             next.delete(emailId);
@@ -229,6 +232,32 @@ export default function Home() {
                     </span>
                     <span className="text-xs text-muted ml-auto">
                       triaging…
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {Object.keys(emailErrors).length > 0 && (
+            <div className="surface card-edge p-4 border-red-200">
+              <p className="eyebrow text-steel mb-2">
+                Failed · {Object.keys(emailErrors).length}
+              </p>
+              <ul className="text-sm space-y-1.5">
+                {Object.entries(emailErrors).map(([emailId, message]) => (
+                  <li
+                    key={emailId}
+                    className="flex items-start gap-2 text-charcoal"
+                  >
+                    <span className="inline-block mt-1 w-1.5 h-1.5 shrink-0 rounded-full bg-red-500" />
+                    <span className="min-w-0 flex-1">
+                      <span className="truncate block font-medium">
+                        {emailsById[emailId]?.subject ?? emailId}
+                      </span>
+                      <span className="text-xs text-red-700 leading-relaxed">
+                        {message}
+                      </span>
                     </span>
                   </li>
                 ))}
