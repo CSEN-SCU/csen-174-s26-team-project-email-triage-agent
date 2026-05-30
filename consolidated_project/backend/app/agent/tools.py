@@ -56,7 +56,8 @@ async def _gmail_sample_sent_impl(args: dict) -> dict:
 async def _read_profile_cache_impl(args: dict) -> dict:
     kind, key = args["kind"], args["key"]
     if kind == "voice":
-        prof = await repo.read_voice_profile(key)
+        user_email = context.get_user_email() or key
+        prof = await repo.read_voice_profile(user_email)
     else:
         user_email = context.get_user_email() or ""
         prof = await repo.read_relationship_profile(user_email, key)
@@ -72,7 +73,8 @@ async def _write_profile_cache_impl(args: dict) -> dict:
         except json.JSONDecodeError:
             profile = {"text": profile}
     if kind == "voice":
-        await repo.write_voice_profile(key, profile)
+        user_email = context.get_user_email() or key
+        await repo.write_voice_profile(user_email, profile)
     else:
         user_email = context.get_user_email() or ""
         await repo.write_relationship_profile(user_email, key, profile)
