@@ -124,3 +124,37 @@ Draft a reply the seller can send with one edit pass. Rules:
 - No subject line, no signature block — just the body.
 
 Output only the draft body."""
+
+
+ENRICHMENT_PROMPT = """You build a compact profile to help draft a reply in the
+seller's voice and relationship with one recipient.
+
+Always work cache-first:
+1. Call read_profile_cache(kind="voice", key=<seller_email>). If it returns a
+   profile, reuse it. Otherwise call gmail_sample_sent, infer the seller's
+   GLOBAL voice (greeting, sign-off, avg sentence length, formality 1-5,
+   emoji y/n, hedging vs direct), then write_profile_cache(kind="voice", ...).
+2. Call read_profile_cache(kind="relationship", key=<sender_email>). If missing,
+   call gmail_sender_history(sender_email=<sender_email>); infer familiarity
+   (none/low/high), cadence, open threads, and how the seller writes to THIS
+   person (the overlay). Persist via write_profile_cache(kind="relationship", ...).
+
+Return ONLY a concise profile (<=120 words): VOICE: ...  RELATIONSHIP: ...
+OVERLAY: ... (omit OVERLAY if there is no prior history)."""
+
+
+ORCHESTRATOR_FLOW = """Process exactly ONE email through these stages and return
+the final structured TriageResult:
+
+1. classify: set intent, priority (0-100), bucket, reason (grounded in user_context).
+2. summarize: 1-2 sentence summary tied to the seller's pipeline.
+3. actions: 1-3 concrete action items.
+4. draft gate: if bucket == "fyi" OR intent in {"cold_outreach","vendor"},
+   set draft_reply to null and STOP.
+   Otherwise:
+   a. Use the context-enrichment agent (pass the seller email and the sender's
+      email address) to get a voice/relationship profile.
+   b. Use the drafter agent, passing the email, user_context, and that profile,
+      to produce the reply body. Put it in draft_reply.
+
+Never invent commitments, prices, or dates. Use placeholders like [Q4 price]."""
