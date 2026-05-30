@@ -1,0 +1,4 @@
+# Test-only dependencies (install with: pip install -r requirements-test.txt)
+pytest==9.0.3
+pytest-asyncio==1.4.0
+aiosqlite==0.22.1

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import type { Email, PartialTriageResult } from "@/lib/types";
+import type { Email, TriageResult } from "@/lib/types";
 import { TriageCard } from "./TriageCard";
 
 const PAGE_SIZE = 3;
@@ -57,7 +57,7 @@ export function BucketColumn({
   title: string;
   subtitle: string;
   accent: Accent;
-  results: PartialTriageResult[];
+  results: TriageResult[];
   emails: Record<string, Email>;
   empty: string;
   eyebrow: string;

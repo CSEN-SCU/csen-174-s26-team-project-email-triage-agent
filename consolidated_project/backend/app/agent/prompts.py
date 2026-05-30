@@ -16,90 +16,6 @@ answer: why does THIS email move pipeline, revenue, or a specific deal forward
 for THIS seller RIGHT NOW?"""
 
 
-CLASSIFY_PROMPT = """<user_context>
-{user_context}
-</user_context>
-
-<email>
-From: {sender_name} <{sender_email}>
-Subject: {subject}
-Received: {received_at}
-
-{body}
-</email>
-
-Classify this email for the seller above. Return JSON with exactly these keys:
-- intent: one of [prospect, deal, customer, partnership, vendor, internal, cold_outreach, other]
-    prospect       = inbound interest, MQL replies, discovery requests, warm intros to buyers
-    deal           = active opportunity in pipeline — proposals, redlines, procurement, champions
-    customer       = existing customer — renewal, expansion, support escalation, exec sponsor
-    partnership    = channel, reseller, integration, or co-sell partner activity
-    vendor         = sales tooling, data providers, agency/consultant outreach to the seller
-    internal       = manager, SE, marketing, RevOps, legal, finance on a deal
-    cold_outreach  = unsolicited pitch TO the seller (not a buyer)
-    other          = anything else
-- priority: integer 0-100. Anchor points:
-    90-100 = late-stage deal in current quarter, signature/redline blockers, champion at risk,
-             paying-customer escalation, exec sponsor pinging back
-    70-89  = qualified prospect ready to book, mid-stage deal needing next step, expansion signal,
-             warm intro into a named target account
-    40-69  = early prospect FYIs, scheduling logistics, partner intros with real upside,
-             internal coordination on a live deal
-    10-39  = unsolicited vendor pitches to the seller, generic newsletters, low-fit cold inbound
-    0-9    = spam, phishing, automated noise
-- bucket: "act_today" (priority >= 80), "decide_this_week" (40-79), or "fyi" (< 40)
-- reason: ONE sentence explaining the priority, referencing the seller's context specifically
-    (e.g. "Acme is your top Q4 deal and their legal team is sending redlines that block signature,"
-    NOT "this email is from a customer").
-
-Output only the JSON object, no prose."""
-
-
-SUMMARIZE_PROMPT = """<user_context>
-{user_context}
-</user_context>
-
-<email>
-From: {sender_name}
-Subject: {subject}
-
-{body}
-</email>
-
-Write a 1-2 sentence summary of what this email needs from the seller, phrased in
-their voice and tied to their pipeline. Do not restate the subject line.
-Be specific: name the deal/account, stage, deadlines, dollar amounts, decision-makers,
-and the concrete ask or blocker.
-
-Output only the summary, no prefix."""
-
-
-ACTIONS_PROMPT = """<user_context>
-{user_context}
-</user_context>
-
-<email>
-From: {sender_name}
-Subject: {subject}
-
-{body}
-</email>
-
-<classification>
-Intent: {intent}
-Priority: {priority}
-Bucket: {bucket}
-</classification>
-
-List 1-3 concrete sales actions the seller should take on this email. Each action is JSON
-with keys: kind (one of: reply, decide, schedule, delegate, archive), label (imperative,
-<= 10 words, sales-flavored — e.g. "Send pricing + book technical deep-dive",
-"Loop in SE on security review", "Forward to CSM for renewal"), due_hint (optional string
-like "today", "before EOQ", or null).
-
-Return a JSON array of action objects. No prose."""
-
-
 DRAFT_REPLY_PROMPT = """<user_context>
 {user_context}
 </user_context>
@@ -124,3 +40,37 @@ Draft a reply the seller can send with one edit pass. Rules:
 - No subject line, no signature block — just the body.
 
 Output only the draft body."""
+
+
+ENRICHMENT_PROMPT = """You build a compact profile to help draft a reply in the
+seller's voice and relationship with one recipient.
+
+Always work cache-first:
+1. Call read_profile_cache(kind="voice", key=<seller_email>). If it returns a
+   profile, reuse it. Otherwise call gmail_sample_sent, infer the seller's
+   GLOBAL voice (greeting, sign-off, avg sentence length, formality 1-5,
+   emoji y/n, hedging vs direct), then write_profile_cache(kind="voice", ...).
+2. Call read_profile_cache(kind="relationship", key=<sender_email>). If missing,
+   call gmail_sender_history(sender_email=<sender_email>); infer familiarity
+   (none/low/high), cadence, open threads, and how the seller writes to THIS
+   person (the overlay). Persist via write_profile_cache(kind="relationship", ...).
+
+Return ONLY a concise profile (<=120 words): VOICE: ...  RELATIONSHIP: ...
+OVERLAY: ... (omit OVERLAY if there is no prior history)."""
+
+
+ORCHESTRATOR_FLOW = """Process exactly ONE email through these stages and return
+the final structured TriageResult:
+
+1. classify: set intent, priority (0-100), bucket, reason (grounded in user_context).
+2. summarize: 1-2 sentence summary tied to the seller's pipeline.
+3. actions: 1-3 concrete action items.
+4. draft gate: if bucket == "fyi" OR intent in {"cold_outreach","vendor"},
+   set draft_reply to null and STOP.
+   Otherwise:
+   a. Use the context-enrichment agent (pass the seller email and the sender's
+      email address) to get a voice/relationship profile.
+   b. Use the drafter agent, passing the email, user_context, and that profile,
+      to produce the reply body. Put it in draft_reply.
+
+Never invent commitments, prices, or dates. Use placeholders like [Q4 price]."""

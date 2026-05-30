@@ -272,3 +272,104 @@ async def fetch_emails_by_ids(access_token: str, ids: list[str]) -> list[Email]:
     if not ids:
         return []
     return await asyncio.to_thread(_fetch_by_ids_sync, access_token, ids)
+
+
+def _get_user_email_sync(access_token: str) -> str:
+    service = _build_service(access_token)
+    try:
+        profile = service.users().getProfile(userId="me").execute()
+    except HttpError as exc:
+        raise GmailFetchError(f"gmail getProfile failed: {exc}") from exc
+    return profile.get("emailAddress", "")
+
+
+def _compact(msg: dict[str, Any]) -> dict[str, str]:
+    headers = {
+        h["name"].lower(): h.get("value", "")
+        for h in (msg.get("payload", {}).get("headers") or [])
+    }
+    label_ids = msg.get("labelIds") or []
+    direction = "sent" if "SENT" in label_ids else "received"
+    received_at = datetime.fromtimestamp(
+        int(msg.get("internalDate", "0")) / 1000, tz=timezone.utc
+    )
+    return {
+        "direction": direction,
+        "subject": headers.get("subject", "") or "(no subject)",
+        "snippet": (msg.get("snippet") or "").strip(),
+        "date": received_at.isoformat(),
+    }
+
+
+def _search_threads_with_sync(
+    access_token: str, sender_email: str, max_threads: int
+) -> list[dict[str, str]]:
+    service = _build_service(access_token)
+    q = f"from:{sender_email} OR to:{sender_email}"
+    try:
+        listing = (
+            service.users()
+            .messages()
+            .list(userId="me", q=q, maxResults=max_threads)
+            .execute()
+        )
+    except HttpError as exc:
+        raise GmailFetchError(f"gmail search failed: {exc}") from exc
+    out: list[dict[str, str]] = []
+    for m in listing.get("messages", []):
+        try:
+            msg = (
+                service.users()
+                .messages()
+                .get(userId="me", id=m["id"], format="metadata",
+                     metadataHeaders=["Subject", "From"])
+                .execute()
+            )
+        except HttpError:
+            continue
+        out.append(_compact(msg))
+    return out
+
+
+def _sample_sent_sync(access_token: str, max_messages: int) -> list[str]:
+    service = _build_service(access_token)
+    try:
+        listing = (
+            service.users()
+            .messages()
+            .list(userId="me", q="in:sent", maxResults=max_messages)
+            .execute()
+        )
+    except HttpError as exc:
+        raise GmailFetchError(f"gmail sent list failed: {exc}") from exc
+    bodies: list[str] = []
+    for m in listing.get("messages", []):
+        try:
+            msg = (
+                service.users()
+                .messages()
+                .get(userId="me", id=m["id"], format="full")
+                .execute()
+            )
+        except HttpError:
+            continue
+        body = _extract_body(msg.get("payload", {}) or {})
+        if body:
+            bodies.append(body[:2000])
+    return bodies
+
+
+async def get_user_email(access_token: str) -> str:
+    return await asyncio.to_thread(_get_user_email_sync, access_token)
+
+
+async def search_threads_with(
+    access_token: str, sender_email: str, max_threads: int = 10
+) -> list[dict[str, str]]:
+    return await asyncio.to_thread(
+        _search_threads_with_sync, access_token, sender_email, max_threads
+    )
+
+
+async def sample_sent(access_token: str, max_messages: int = 25) -> list[str]:
+    return await asyncio.to_thread(_sample_sent_sync, access_token, max_messages)
