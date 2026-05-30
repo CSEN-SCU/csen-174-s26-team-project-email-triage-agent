@@ -1,15 +1,13 @@
 import asyncio
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.agent.graph import get_graph, triage_email
+from app.agent.orchestrator import triage_email
 from app.auth.deps import gmail_access_token
 from app.auth.gmail import (
     GmailFetchError,
@@ -188,50 +186,18 @@ async def triage(
     if payload.user_context:
         _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
     emails = await _select_emails(payload.email_ids, token)
-    loop = asyncio.get_running_loop()
+    semaphore = asyncio.Semaphore(4)  # cap concurrent Node subprocesses
+
+    async def _one(email: Email) -> TriageResult:
+        async with semaphore:
+            return await triage_email(email, _user_context, token)
+
     try:
-        with ThreadPoolExecutor(max_workers=min(8, len(emails) or 1)) as pool:
-            results = await asyncio.gather(
-                *(
-                    loop.run_in_executor(pool, triage_email, email, _user_context)
-                    for email in emails
-                )
-            )
-    except asyncio.TimeoutError as exc:
-        logger.exception("triage timed out")
-        raise HTTPException(status_code=504, detail="triage timed out") from exc
+        results = await asyncio.gather(*(_one(e) for e in emails))
     except Exception as exc:  # noqa: BLE001 — LLM / agent outage
         logger.exception("triage agent failed")
-        raise HTTPException(
-            status_code=502,
-            detail="triage agent unavailable",
-        ) from exc
+        raise HTTPException(status_code=502, detail="triage agent unavailable") from exc
     return _bucket_results(list(results))
-
-
-# Maps internal LangGraph node names to stable, UI-friendly stage labels.
-_STAGE_LABELS = {
-    "classify_node": "classify",
-    "summarize_node": "summarize",
-    "actions_node": "actions",
-    "draft_node": "draft",
-    "skip_draft_node": "draft",
-}
-
-
-def _serialize_patch(patch: dict[str, Any]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for key, value in patch.items():
-        if hasattr(value, "model_dump"):
-            out[key] = value.model_dump(mode="json")
-        elif isinstance(value, list):
-            out[key] = [
-                v.model_dump(mode="json") if hasattr(v, "model_dump") else v
-                for v in value
-            ]
-        else:
-            out[key] = value
-    return out
 
 
 @router.post("/triage/stream")
@@ -240,66 +206,36 @@ async def triage_stream(
     token: str | None = Depends(gmail_access_token),
     _: str = Depends(rate_limit_triage),
 ):
-    """SSE: emit per-stage updates as each LangGraph node completes per email.
+    """SSE: emit one 'result' event per email plus start/done.
 
     Events:
-      - start      {total}
-      - stage      {email_id, stage, patch}   # stage ∈ classify|summarize|actions|draft
-      - email_done {email_id}
-      - error      {email_id, message}
-      - done       {}
+      - start       {total}
+      - result      {email_id, result}     # full TriageResult JSON
+      - error       {email_id, message}
+      - done        {}
     """
     global _user_context
     if payload.user_context:
         _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
     emails = await _select_emails(payload.email_ids, token)
-    context = _user_context
+    context_blurb = _user_context
 
     async def event_source():
-        loop = asyncio.get_running_loop()
-        queue: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue()
-        graph = get_graph()
+        yield f"event: start\ndata: {json.dumps({'total': len(emails)})}\n\n"
+        semaphore = asyncio.Semaphore(4)
 
-        def put(event: str, data: dict[str, Any]) -> None:
-            loop.call_soon_threadsafe(queue.put_nowait, (event, data))
+        async def _one(email: Email):
+            async with semaphore:
+                try:
+                    result = await triage_email(email, context_blurb, token)
+                    return ("result", {"email_id": email.id, "result": result.model_dump(mode="json")})
+                except Exception as exc:  # noqa: BLE001 — surface to client
+                    return ("error", {"email_id": email.id, "message": str(exc)})
 
-        def run_one(email: Email) -> None:
-            try:
-                for update in graph.stream(
-                    {"email": email, "user_context": context},
-                    stream_mode="updates",
-                ):
-                    for node, patch in update.items():
-                        stage = _STAGE_LABELS.get(node, node)
-                        put(
-                            "stage",
-                            {
-                                "email_id": email.id,
-                                "stage": stage,
-                                "patch": _serialize_patch(patch or {}),
-                            },
-                        )
-                put("email_done", {"email_id": email.id})
-            except Exception as exc:  # noqa: BLE001 — surface to client
-                put("error", {"email_id": email.id, "message": str(exc)})
-
-        pool = ThreadPoolExecutor(max_workers=min(8, len(emails) or 1))
-        try:
-            for email in emails:
-                loop.run_in_executor(pool, run_one, email)
-
-            yield f"event: start\ndata: {json.dumps({'total': len(emails)})}\n\n"
-
-            remaining = len(emails)
-            while remaining > 0:
-                event, data = await queue.get()
-                yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
-                if event in ("email_done", "error"):
-                    remaining -= 1
-
-            yield "event: done\ndata: {}\n\n"
-        finally:
-            pool.shutdown(wait=False)
+        for coro in asyncio.as_completed([_one(e) for e in emails]):
+            event, data = await coro
+            yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
+        yield "event: done\ndata: {}\n\n"
 
     return StreamingResponse(event_source(), media_type="text/event-stream")
 
