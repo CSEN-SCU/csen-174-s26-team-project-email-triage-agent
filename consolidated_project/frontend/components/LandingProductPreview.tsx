@@ -138,7 +138,7 @@ export function LandingProductPreview() {
           <span className="w-2.5 h-2.5 rounded-full bg-decide/80" />
           <span className="w-2.5 h-2.5 rounded-full bg-hairline-strong" />
           <span className="ml-2 eyebrow text-steel truncate">
-            Email Triage · demo inbox
+            Email Triage · preview inbox
           </span>
         </div>
         <div className="p-3 sm:p-4 bg-canvas">

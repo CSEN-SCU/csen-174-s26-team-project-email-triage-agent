@@ -108,7 +108,7 @@ export function LandingPage() {
               </p>
               <LandingCtas busy={busy} onConnect={connectGmail} className="mt-8" />
               <p className="mt-5 max-w-md text-sm leading-relaxed text-steel">
-                Read-only Gmail access. Demo mode includes a seeded founder inbox.
+                Read-only Gmail access.
               </p>
             </div>
 
@@ -203,8 +203,8 @@ export function LandingPage() {
                 Start with clarity, not clutter.
               </h2>
               <p className="mt-4 text-[17px] leading-[1.65] text-slate">
-                Connect your inbox or try the seeded demo. Same triage flow, no
-                credit card.
+                Connect your inbox to start triaging real messages with your
+                current priorities. No credit card required.
               </p>
               <LandingCtas busy={busy} onConnect={connectGmail} className="mt-8" />
             </div>

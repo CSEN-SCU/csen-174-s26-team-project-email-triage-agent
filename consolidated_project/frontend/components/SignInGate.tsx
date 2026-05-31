@@ -9,7 +9,7 @@ export function SignInGate() {
   return (
     <section className="border border-hairline rounded-card p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-5 bg-surface-soft">
       <div className="flex-1 min-w-0">
-        <p className="eyebrow text-steel">Demo mode · seeded inbox</p>
+        <p className="eyebrow text-steel">Preview mode · sample inbox</p>
         <h2 className="text-heading-4 mt-2 leading-snug text-ink">
           Triage your inbox, not a fixture.
         </h2>

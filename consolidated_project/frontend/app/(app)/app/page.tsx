@@ -107,7 +107,7 @@ export default function Home() {
   const done = Object.values(results).length;
   const sourceLabel = authed
     ? `Gmail · ${session?.user?.email ?? "connected"}`
-    : "Demo · seeded founder inbox";
+    : "Preview · sample founder inbox";
 
   return (
     <main className="max-w-7xl mx-auto px-6 pt-12 pb-20">
@@ -166,7 +166,7 @@ export default function Home() {
               </span>
             </div>
             <h3 className="text-heading-4 mt-1 leading-tight text-ink">
-              {authed ? "Your latest messages" : "Seeded founder inbox"}
+              {authed ? "Your latest messages" : "Sample founder inbox"}
             </h3>
             <p className="text-xs text-muted mt-1">
               {authed
