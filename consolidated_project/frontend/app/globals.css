@@ -12,6 +12,7 @@ html,
 body {
   background: #ffffff;
   color: #1a1a1a;
+  overscroll-behavior: none;
 }
 
 body {

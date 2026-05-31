@@ -9,8 +9,8 @@ const focusRing =
 
 export function LandingNav() {
   return (
-    <nav aria-label="Site" className="sticky top-0 z-50">
-      <div className="mx-auto flex h-12 max-w-3xl items-center justify-between gap-4 border-b border-hairline bg-canvas/95 px-6 backdrop-blur-sm">
+    <nav aria-label="Site" className="sticky top-3 z-50 px-4">
+      <div className="mx-auto flex h-[3.25rem] max-w-7xl items-center justify-between gap-4 rounded-full border border-hairline bg-canvas/95 px-5 shadow-subtle backdrop-blur-sm sm:px-6">
         <Link
           href="/"
           className={`flex items-center gap-2 shrink-0 rounded-full px-1.5 py-1 hover:opacity-90 transition-opacity ${focusRing}`}

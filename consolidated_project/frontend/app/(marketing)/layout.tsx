@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LandingNav } from "@/components/LandingNav";
+import { MarketingFooter } from "@/components/MarketingFooter";
 
 export const metadata: Metadata = {
   title: "Email Triage — your inbox with a point of view",
@@ -16,6 +17,7 @@ export default function MarketingLayout({
     <>
       <LandingNav />
       {children}
+      <MarketingFooter />
     </>
   );
 }

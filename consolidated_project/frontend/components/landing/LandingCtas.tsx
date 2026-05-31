@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 export function LandingCtas({
   busy,
   onConnect,
@@ -24,9 +22,6 @@ export function LandingCtas({
         {busy ? "Connecting…" : "Connect Gmail"}
         {!busy && <span aria-hidden>→</span>}
       </button>
-      <Link href="/app" className="btn-secondary">
-        Try demo
-      </Link>
     </div>
   );
 }

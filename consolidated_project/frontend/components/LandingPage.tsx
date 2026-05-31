@@ -153,9 +153,9 @@ export function LandingPage() {
               Built for triage, not browsing.
             </h2>
             <p className="mt-4 text-[17px] leading-[1.65] text-slate">
-              The page follows the same minimal system throughout: neutral type,
-              hairline borders, readable spacing, and motion that clarifies instead
-              of competing for attention.
+              The agent reads each message against your current priorities, then
+              sorts the inbox into what needs action, what needs a decision, and
+              what can safely wait.
             </p>
           </div>
 
