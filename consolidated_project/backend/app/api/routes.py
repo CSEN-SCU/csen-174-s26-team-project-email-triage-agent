@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 import logging
 from datetime import datetime, timezone
@@ -41,6 +42,20 @@ class TriagePayload(BaseModel):
 
 
 _user_context: str = DEFAULT_USER_CONTEXT
+_triage_cache: dict[tuple[str, str], TriageResult] = {}
+
+
+def _cache_key(email_id: str, token: str | None) -> tuple[str, str]:
+    owner = "preview" if token is None else hashlib.sha256(token.encode()).hexdigest()
+    return (owner, email_id)
+
+
+def _set_user_context(raw_context: str) -> None:
+    global _user_context
+    next_context = sanitize_user_context(raw_context) or DEFAULT_USER_CONTEXT
+    if next_context != _user_context:
+        _triage_cache.clear()
+    _user_context = next_context
 
 
 @router.get("/health")
@@ -114,8 +129,7 @@ def set_context(
     payload: ContextPayload,
     _: str = Depends(rate_limit_triage),
 ) -> dict[str, str]:
-    global _user_context
-    _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
+    _set_user_context(payload.user_context)
     return {"user_context": _user_context}
 
 
@@ -182,15 +196,19 @@ async def triage(
     token: str | None = Depends(gmail_access_token),
     _: str = Depends(rate_limit_triage),
 ) -> TriageDigest:
-    global _user_context
     if payload.user_context:
-        _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
+        _set_user_context(payload.user_context)
     emails = await _select_emails(payload.email_ids, token)
     semaphore = asyncio.Semaphore(4)  # cap concurrent Node subprocesses
 
     async def _one(email: Email) -> TriageResult:
+        key = _cache_key(email.id, token)
+        if cached := _triage_cache.get(key):
+            return cached
         async with semaphore:
-            return await triage_email(email, _user_context, token)
+            result = await triage_email(email, _user_context, token)
+            _triage_cache[key] = result
+            return result
 
     try:
         results = await asyncio.gather(*(_one(e) for e in emails))
@@ -214,25 +232,36 @@ async def triage_stream(
       - error       {email_id, message}
       - done        {}
     """
-    global _user_context
     if payload.user_context:
-        _user_context = sanitize_user_context(payload.user_context) or DEFAULT_USER_CONTEXT
+        _set_user_context(payload.user_context)
     emails = await _select_emails(payload.email_ids, token)
     context_blurb = _user_context
 
     async def event_source():
         yield f"event: start\ndata: {json.dumps({'total': len(emails)})}\n\n"
         semaphore = asyncio.Semaphore(4)
+        uncached_emails: list[Email] = []
+
+        for email in emails:
+            cached = _triage_cache.get(_cache_key(email.id, token))
+            if cached:
+                yield (
+                    "event: result\n"
+                    f"data: {json.dumps({'email_id': email.id, 'result': cached.model_dump(mode='json')})}\n\n"
+                )
+            else:
+                uncached_emails.append(email)
 
         async def _one(email: Email):
             async with semaphore:
                 try:
                     result = await triage_email(email, context_blurb, token)
+                    _triage_cache[_cache_key(email.id, token)] = result
                     return ("result", {"email_id": email.id, "result": result.model_dump(mode="json")})
                 except Exception as exc:  # noqa: BLE001 — surface to client
                     return ("error", {"email_id": email.id, "message": str(exc)})
 
-        for coro in asyncio.as_completed([_one(e) for e in emails]):
+        for coro in asyncio.as_completed([_one(e) for e in uncached_emails]):
             event, data = await coro
             yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
         yield "event: done\ndata: {}\n\n"

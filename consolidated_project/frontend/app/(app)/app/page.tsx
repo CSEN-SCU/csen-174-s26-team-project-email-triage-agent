@@ -72,12 +72,21 @@ export default function Home() {
     setEmailErrors({});
     setRunning(true);
     setTotal(null);
+    setEmailsLoading(true);
     try {
+      const refreshedEmails = await api.listEmails();
+      setEmails(refreshedEmails);
+
+      if (refreshedEmails.length === 0) {
+        return;
+      }
+
+      const triageEmailIds = refreshedEmails.map((email) => email.id);
+
       await api.triageStream(undefined, {
         onStart: (t) => {
           setTotal(t);
-          // Pre-populate pending with all email IDs we know about
-          setPending(new Set(emails.map((e) => e.id)));
+          setPending(new Set(triageEmailIds));
         },
         onResult: (emailId, result) => {
           setResults((prev) => ({ ...prev, [emailId]: result }));
@@ -95,12 +104,13 @@ export default function Home() {
             return next;
           });
         },
-      });
+      }, triageEmailIds);
     } catch (e) {
       setError(String(e));
     } finally {
       setRunning(false);
       setPending(new Set());
+      setEmailsLoading(false);
     }
   }
 

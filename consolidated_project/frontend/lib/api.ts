@@ -37,12 +37,12 @@ export const api = {
     return data.user_context;
   },
 
-  async triage(userContext?: string): Promise<TriageDigest> {
+  async triage(userContext?: string, emailIds?: string[]): Promise<TriageDigest> {
     return json(
       await fetch("/api/triage", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ user_context: userContext }),
+        body: JSON.stringify({ user_context: userContext, email_ids: emailIds }),
       })
     );
   },
@@ -83,12 +83,13 @@ export const api = {
       onStart?: (total: number) => void;
       onResult?: (emailId: string, result: TriageResult) => void;
       onError?: (emailId: string, message: string) => void;
-    }
+    },
+    emailIds?: string[]
   ): Promise<void> {
     const res = await fetch("/api/triage/stream", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ user_context: userContext }),
+      body: JSON.stringify({ user_context: userContext, email_ids: emailIds }),
     });
     if (!res.ok || !res.body) {
       throw new Error(`stream failed: ${res.status}`);
