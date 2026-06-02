@@ -17,3 +17,13 @@ DESIGN.md
 node_modules
 /docs/superpowers/*
 .venv*
+
+# --- Terraform / Terragrunt ---
+**/.terraform/*
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!*.tfvars.example
+.terragrunt-cache/
