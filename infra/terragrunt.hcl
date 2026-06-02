@@ -4,7 +4,7 @@ locals {
   project  = local.env_vars.locals.project
   # The state bucket is created/owned by you. Set TG_STATE_BUCKET in your env,
   # or replace the default below.
-  state_bucket = get_env("TG_STATE_BUCKET", "REPLACE_WITH_YOUR_STATE_BUCKET")
+  state_bucket = get_env("TG_STATE_BUCKET", "triage-prod-tfstate-867418408450")
 }
 
 remote_state {

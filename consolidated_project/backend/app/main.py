@@ -48,3 +48,11 @@ app.include_router(router, prefix="/api", dependencies=[Depends(require_gateway_
 @app.get("/")
 def root() -> dict[str, str]:
     return {"name": "email-triage-agent", "docs": "/docs"}
+
+
+# Unauthenticated liveness probe (used by the Docker HEALTHCHECK and any
+# external monitor). Intentionally NOT behind the gateway key, so health
+# checks don't need the shared secret.
+@app.get("/api/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}

@@ -23,11 +23,15 @@ if [ "$INSTANCE_ID" = "None" ] || [ -z "$INSTANCE_ID" ]; then
 fi
 echo "    instance=$INSTANCE_ID"
 
-echo "==> Building and pushing backend image ($IMAGE_TAG)"
+echo "==> Building and pushing backend image ($IMAGE_TAG) for linux/amd64"
 aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-docker build -t "$BACKEND_URL:$IMAGE_TAG" -t "$BACKEND_URL:latest" "$ROOT/consolidated_project/backend"
-docker push "$BACKEND_URL:$IMAGE_TAG"
-docker push "$BACKEND_URL:latest"
+# The EC2 host is x86_64, so target linux/amd64 explicitly. Without this, a build
+# on an arm64 machine (e.g. Apple Silicon) pushes an arm64-only image and the host
+# fails to pull with "no matching manifest for linux/amd64". buildx builds and
+# pushes the single-arch amd64 image in one step.
+docker buildx build --platform linux/amd64 \
+  -t "$BACKEND_URL:$IMAGE_TAG" -t "$BACKEND_URL:latest" \
+  --push "$ROOT/consolidated_project/backend"
 
 echo "==> Triggering remote deploy via SSM"
 COMPOSE_B64="$(base64 < "$COMPOSE_FILE" | tr -d '\n')"

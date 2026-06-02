@@ -64,9 +64,15 @@ data "aws_iam_policy_document" "instance" {
     resources = var.ecr_repository_arns
   }
   statement {
-    sid       = "SsmRead"
-    actions   = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
-    resources = ["arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_path_prefix}/*"]
+    sid     = "SsmRead"
+    actions = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
+    # GetParametersByPath authorizes against the queried path node itself
+    # (parameter/triage/prod), while GetParameter(s) authorize against the
+    # child parameters (parameter/triage/prod/*). Both ARNs are required.
+    resources = [
+      "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_path_prefix}",
+      "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_path_prefix}/*",
+    ]
   }
   statement {
     sid       = "KmsDecrypt"

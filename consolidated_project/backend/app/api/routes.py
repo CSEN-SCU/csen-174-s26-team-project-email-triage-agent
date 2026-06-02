@@ -58,11 +58,6 @@ def _set_user_context(raw_context: str) -> None:
     _user_context = next_context
 
 
-@router.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
 @router.get("/auth/status")
 def auth_status(
     token: str | None = Depends(gmail_access_token),
