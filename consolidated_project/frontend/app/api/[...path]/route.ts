@@ -35,6 +35,12 @@ async function proxy(
     headers.set("authorization", `Bearer ${session.accessToken}`);
   }
 
+  // Shared secret that authorizes this proxy to the backend. The backend
+  // rejects requests without it (see backend/app/security/gateway.py).
+  if (process.env.GATEWAY_KEY) {
+    headers.set("x-gateway-key", process.env.GATEWAY_KEY);
+  }
+
   const init: RequestInit & { duplex?: "half" } = {
     method: req.method,
     headers,

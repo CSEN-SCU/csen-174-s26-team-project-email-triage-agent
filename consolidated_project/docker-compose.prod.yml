@@ -25,24 +25,21 @@ services:
       TRIAGE_MODEL: ${TRIAGE_MODEL}
       CLASSIFY_MODEL: ${CLASSIFY_MODEL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      GATEWAY_KEY: ${GATEWAY_KEY}
       DATABASE_URL: ${DATABASE_URL}
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    # No host ports: the backend is reached only via the Cloudflare tunnel
+    # over the internal docker network (cloudflared -> backend:8000).
 
-  frontend:
-    image: ${ECR_FRONTEND_URL}:${IMAGE_TAG}
+  # Outbound-only Cloudflare tunnel. Dials out to Cloudflare's edge, so no
+  # inbound ports are opened on the host. Configure the public hostname ->
+  # http://backend:8000 mapping in the Cloudflare Zero Trust dashboard.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
     restart: unless-stopped
     depends_on:
-      backend:
-        condition: service_healthy
-    environment:
-      AUTH_SECRET: ${AUTH_SECRET}
-      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID}
-      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET}
-      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
-      NEXTAUTH_URL: ${NEXTAUTH_URL}
-      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
-    ports:
-      - "3000:3000"
+      - backend
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
 
 volumes:
   triage_pg_data:

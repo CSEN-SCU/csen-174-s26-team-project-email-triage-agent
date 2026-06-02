@@ -14,10 +14,11 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket  = local.state_bucket
-    key     = "${path_relative_to_include()}/terraform.tfstate"
-    region  = local.region
-    encrypt = true
+    bucket       = local.state_bucket
+    key          = "${path_relative_to_include()}/terraform.tfstate"
+    region       = local.region
+    encrypt      = true
+    use_lockfile = true
   }
 }
 

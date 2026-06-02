@@ -1,13 +1,14 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
 from app.config import settings
 from app.db.seed import init_db_schema_and_seed
 from app.db.session import dispose_async_engine
+from app.security.gateway import require_gateway_key
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,7 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/api")
+app.include_router(router, prefix="/api", dependencies=[Depends(require_gateway_key)])
 
 
 @app.get("/")

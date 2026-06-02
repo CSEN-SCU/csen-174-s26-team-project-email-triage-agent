@@ -13,7 +13,6 @@ echo "==> Resolving infrastructure identifiers"
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 BACKEND_URL="${ECR_REGISTRY}/${PROJECT}-backend"
-FRONTEND_URL="${ECR_REGISTRY}/${PROJECT}-frontend"
 
 INSTANCE_ID="$(aws ec2 describe-instances --region "$REGION" \
   --filters "Name=tag:Name,Values=${PROJECT}-prod" "Name=instance-state-name,Values=running" \
@@ -22,19 +21,13 @@ if [ "$INSTANCE_ID" = "None" ] || [ -z "$INSTANCE_ID" ]; then
   echo "ERROR: no running ${PROJECT}-prod instance found" >&2
   exit 1
 fi
-EIP="$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" \
-  --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)"
-PUBLIC="http://${EIP}:3000"
-echo "    instance=$INSTANCE_ID  eip=$EIP"
+echo "    instance=$INSTANCE_ID"
 
-echo "==> Building and pushing images ($IMAGE_TAG)"
+echo "==> Building and pushing backend image ($IMAGE_TAG)"
 aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 docker build -t "$BACKEND_URL:$IMAGE_TAG" -t "$BACKEND_URL:latest" "$ROOT/consolidated_project/backend"
-docker build -t "$FRONTEND_URL:$IMAGE_TAG" -t "$FRONTEND_URL:latest" "$ROOT/consolidated_project/frontend"
 docker push "$BACKEND_URL:$IMAGE_TAG"
 docker push "$BACKEND_URL:latest"
-docker push "$FRONTEND_URL:$IMAGE_TAG"
-docker push "$FRONTEND_URL:latest"
 
 echo "==> Triggering remote deploy via SSM"
 COMPOSE_B64="$(base64 < "$COMPOSE_FILE" | tr -d '\n')"
@@ -44,9 +37,6 @@ mkdir -p /opt/triage
 echo ${COMPOSE_B64} | base64 -d > /opt/triage/docker-compose.yml
 export IMAGE_TAG='${IMAGE_TAG}'
 export ECR_BACKEND_URL='${BACKEND_URL}'
-export ECR_FRONTEND_URL='${FRONTEND_URL}'
-export CORS_ORIGINS='${PUBLIC}'
-export NEXTAUTH_URL='${PUBLIC}'
 /opt/triage/run.sh
 EOF
 )"
@@ -78,4 +68,4 @@ if [ "$STATUS" != "Success" ]; then
   echo "ERROR: deploy status=$STATUS" >&2
   exit 1
 fi
-echo "==> Deployed. App: $PUBLIC"
+echo "==> Deployed. Backend is reachable via the Cloudflare tunnel hostname set in the CF Zero Trust dashboard."

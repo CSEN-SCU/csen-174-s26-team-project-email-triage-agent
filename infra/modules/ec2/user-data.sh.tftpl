@@ -39,15 +39,11 @@ aws ssm get-parameters-by-path --path "$SSM_PREFIX" --with-decryption --recursiv
     done > /opt/triage/.env
 
 # Deploy-time vars provided by the caller's environment.
+# (CORS_ORIGINS, GATEWAY_KEY, CF_TUNNEL_TOKEN come from SSM, rendered above.)
 {
   echo "IMAGE_TAG=$${IMAGE_TAG:?missing IMAGE_TAG}"
   echo "ECR_BACKEND_URL=$${ECR_BACKEND_URL:?missing ECR_BACKEND_URL}"
-  echo "ECR_FRONTEND_URL=$${ECR_FRONTEND_URL:?missing ECR_FRONTEND_URL}"
-  echo "CORS_ORIGINS=$${CORS_ORIGINS:?missing CORS_ORIGINS}"
-  echo "NEXTAUTH_URL=$${NEXTAUTH_URL:?missing NEXTAUTH_URL}"
   echo "DATABASE_URL=$${DATABASE_URL:-postgresql://triage:triage@postgres:5432/triage}"
-  echo "BACKEND_URL=$${BACKEND_URL:-http://backend:8000}"
-  echo "AUTH_TRUST_HOST=$${AUTH_TRUST_HOST:-true}"
 } >> /opt/triage/.env
 
 cd /opt/triage

@@ -12,15 +12,11 @@ locals {
 
 resource "aws_security_group" "this" {
   name        = "${var.project}-prod-sg"
-  description = "Triage prod host - frontend ingress only"
+  description = "Triage prod host - no inbound; reached via Cloudflare tunnel (outbound-only)"
 
-  ingress {
-    description = "frontend"
-    from_port   = var.frontend_port
-    to_port     = var.frontend_port
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_cidr]
-  }
+  # No ingress rules: the host is reached through a Cloudflare tunnel that
+  # dials out to Cloudflare's edge. SSM access and image pulls also use
+  # outbound connections only.
 
   egress {
     from_port   = 0

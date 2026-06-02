@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     triage_model: str = "claude-sonnet-4-5"
     classify_model: str = "claude-haiku-4-5"
     cors_origins: str = "http://localhost:3000"
+    # Shared secret the frontend proxy must present (header: x-gateway-key).
+    # Empty disables enforcement (local dev); set in prod via SSM.
+    gateway_key: str = ""
 
     @property
     def api_key(self) -> str:
