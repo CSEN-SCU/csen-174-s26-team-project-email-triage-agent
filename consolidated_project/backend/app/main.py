@@ -28,7 +28,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="Sales Email Triage Agent",
-    description="LangGraph + Claude triage for B2B sales inboxes — prospects, deals, and customers.",
+    description="Claude Agent SDK triage for B2B sales inboxes — prospects, deals, and customers.",
     version="0.1.0",
     lifespan=lifespan,
 )

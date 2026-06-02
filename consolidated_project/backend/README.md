@@ -5,7 +5,7 @@ FastAPI + Pydantic + LangGraph + Claude API.
 ## Quickstart
 
 ```bash
-cd prototypes/jason/backend
+cd consolidated_project/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # then paste your ANTHROPIC_API_KEY
@@ -13,6 +13,22 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 Open http://localhost:8000/docs for the OpenAPI UI.
+
+## Backend runtime requirements
+
+The triage agent uses the Claude Agent SDK (`claude-agent-sdk`), which drives the
+Claude Code CLI — a Node.js binary — as a subprocess. Install it once per
+machine/image:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+Set `ANTHROPIC_API_KEY` (or `CLAUDE_API_KEY`) as before. If the CLI is not on
+`$PATH`, set its location and pass it via `ClaudeAgentOptions(cli_path=...)`.
+
+> Note: the SDK pulls in `mcp`/`sse-starlette`, which require `starlette>=0.49`.
+> `requirements.txt` therefore pins `fastapi==0.136.3` (not the older 0.115.x).
 
 ## Architecture
 

@@ -4,8 +4,7 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import type {
   Email,
-  PartialTriageResult,
-  Stage,
+  TriageResult,
   SubmitStatus,
 } from "@/lib/types";
 import { canSubmitDraft } from "@/lib/triage-helpers";
@@ -41,31 +40,13 @@ function PriorityBar({ value }: { value: number }) {
   );
 }
 
-function StagePill({ stage, done }: { stage?: Stage; done?: boolean }) {
-  if (done) return null;
-  const label =
-    stage === "summarize"
-      ? "summarizing"
-      : stage === "actions"
-        ? "extracting actions"
-        : stage === "draft"
-          ? "drafting reply"
-          : "classifying";
-  return (
-    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-eyebrow text-steel bg-surface px-2 py-0.5 rounded-notion border border-hairline">
-      <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink animate-pulse-soft" />
-      {label}
-    </span>
-  );
-}
-
 export function TriageCard({
   result,
   email,
   accent = "act",
   canSend = false,
 }: {
-  result: PartialTriageResult;
+  result: TriageResult;
   email?: Email;
   accent?: Accent;
   canSend?: boolean;
@@ -138,7 +119,6 @@ export function TriageCard({
                 </span>
               </>
             )}
-            <StagePill stage={result.stage} done={result.done} />
           </div>
           <h3 className="text-heading-4 leading-snug text-ink truncate">
             {email?.subject ?? result.email_id}
@@ -153,13 +133,9 @@ export function TriageCard({
         </div>
       </header>
 
-      {result.summary ? (
+      {result.summary && (
         <p className="mt-3 text-[15px] leading-relaxed text-charcoal">
           {result.summary}
-        </p>
-      ) : (
-        <p className="mt-3 text-sm leading-relaxed text-muted italic">
-          waiting for summary…
         </p>
       )}
 
@@ -250,9 +226,6 @@ export function TriageCard({
         </div>
       )}
 
-      {result.error && (
-        <p className="mt-3 text-xs text-red-700">error: {result.error}</p>
-      )}
     </article>
   );
 }

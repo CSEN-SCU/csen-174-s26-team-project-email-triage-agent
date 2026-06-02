@@ -11,9 +11,9 @@ UNLIKE **general-purpose tools like Google Gemini in Gmail**
 
 OUR PRODUCT **adapts based on your specific workflows, business context, and decision-making patterns to deliver a personalized email management system**
 
-POWERED BY **an Antigravity multi-agent runtime, decentralized intent classification, priority scoring, semantic summarization, automated draft generation, and Google / Gmail API integration**
+POWERED BY **the Claude Agent SDK, specialized subagents, intent classification, priority scoring, semantic summarization, automated draft generation, and Google / Gmail API integration**
 
-*Our product vision shifted to a sales-focused context to help entrepreneurs prioritize sales leads and client communications. Additionally, the technology stack was updated to reflect the transition to an Antigravity multi-agent architecture.*
+*Our product vision shifted to a sales-focused context to help entrepreneurs prioritize sales leads and client communications. Additionally, the technology stack was updated to reflect the transition from an in-process LangGraph pipeline to a Claude Agent SDK orchestrator with specialized subagents.*
 ________________
 
 # Part 2: W4 Intended Architecture
@@ -36,7 +36,7 @@ flowchart TB
 
   subgraph external["External systems"]
     google["Google\nOAuth 2.0 + Gmail API"]
-    antigravity["Gemini API\nGemini 3.5 Flash"]
+    claude["Claude Agent SDK + Anthropic API\nClaude models"]
     postgres["PostgreSQL"]
     vercel["Vercel\n(frontend hosting)"]
     gfonts["Google Fonts CDN\n(next/font)"]
@@ -45,7 +45,7 @@ flowchart TB
   founder -->|"HTTPS browser"| system
   system -->|"Deployed on"| vercel
   system -->|"Sign-in, read inbox"| google
-  system -->|"Antigravity agent pipeline"| antigravity
+  system -->|"Claude Agent SDK triage pipeline"| claude
   system -->|"Database"| postgres
   system -.->|"Font files at build/runtime"| gfonts
 ```
@@ -80,20 +80,14 @@ flowchart TB
       routes --> inbox
     end
 
-    subgraph agent_classifier["Container: Classifier Agent (Antigravity Runtime)"]
-      classifier["Triage Classifier\n(agents/classifier/agent.py)"]
-    end
-
-    subgraph agent_summarizer["Container: Summarizer Agent (Antigravity Runtime)"]
-      summarizer["Email Summarizer\n(agents/summarizer/agent.py)"]
-    end
-
-    subgraph agent_actions["Container: Actions Agent (Antigravity Runtime)"]
-      actions["Action Extractor\n(agents/actions/agent.py)"]
-    end
-
-    subgraph agent_draft["Container: Draft Agent (Antigravity Runtime)"]
-      draft["Reply Generator\n(agents/draft/agent.py)"]
+    subgraph sdk_pipeline["Claude Agent SDK pipeline"]
+      orchestrator["Orchestrator\n(app/agent/orchestrator.py)"]
+      tools["MCP tools\n(app/agent/tools.py)"]
+      context_agent["Context enrichment subagent\n(app/agent/subagents.py)"]
+      drafter["Draft reply subagent\n(app/agent/subagents.py)"]
+      orchestrator --> tools
+      orchestrator --> context_agent
+      orchestrator --> drafter
     end
   end
 
@@ -111,33 +105,27 @@ flowchart TB
   gmailmod --> gmail_api
   inbox --> pg
 
-  routes -->|"Invokes triage pipeline"| classifier
-  classifier -->|"Passes classification state"| summarizer
-  summarizer -->|"Passes summary state"| actions
-  actions -->|"If reply required"| draft
-  actions -.->|"If FYI / no draft"| routes
-  draft -->|"Returns draft reply"| routes
+  routes -->|"Invokes triage_email"| orchestrator
+  orchestrator -->|"Structured classification, summary, actions"| routes
+  drafter -->|"Optional draft reply"| orchestrator
+  tools -->|"Sender history / sent samples"| gmail_api
 
-  classifier -->|"Calls API"| anthropic_api
-  summarizer -->|"Calls API"| anthropic_api
-  actions -->|"Calls API"| anthropic_api
-  draft -->|"Calls API"| anthropic_api
+  orchestrator -->|"Calls API via SDK"| anthropic_api
+  context_agent -->|"Calls API via SDK"| anthropic_api
+  drafter -->|"Calls API via SDK"| anthropic_api
 
   style web fill:#e3f2fd,stroke:#1565c0
   style api fill:#e8eaf6,stroke:#3949ab
-  style agent_classifier fill:#e0f2f1,stroke:#00695c
-  style agent_summarizer fill:#e0f7fa,stroke:#00838f
-  style agent_actions fill:#e1f5fe,stroke:#0277bd
-  style agent_draft fill:#f3e5f5,stroke:#6a1b9a
+  style sdk_pipeline fill:#e0f2f1,stroke:#00695c
 ```
 ________________
 # Part 4: Decisions that Shifted
 
-### Transitioning from LangGraph to Antigravity Multi-Agent Architecture
-- **Context**: The team needed to support independent, highly specialized agents that could be deployed and run in parallel, which became complex to coordinate and scale cleanly within a single in-process LangGraph StateGraph.
-- **Decision**: We transitioned the LLM pipeline from an in-process LangGraph graph to a decentralized multi-agent system built on Antigravity, hosting each agent (Classifier, Summarizer, Actions, and Draft) in its own separate runtime environment.
-- **Consequences**: This introduces communication overhead and operational complexity between independent runtime processes, but provides distinct execution isolation and scalability for each agent component.
-- **Classification**: **Deliberate and prudent**. The shift was actively chosen to build a scalable and modular multi-agent structure leveraging the strengths of the Antigravity runtime.
+### Transitioning from LangGraph to Claude Agent SDK
+- **Context**: The team needed more flexible agent behavior than the original in-process LangGraph StateGraph provided. The triage flow now needs an orchestrator that can coordinate structured classification, summarization, action extraction, optional drafting, Gmail-aware enrichment, and profile-cache tools without forcing every step into one rigid graph.
+- **Decision**: We transitioned the LLM pipeline from an in-process LangGraph graph to a Claude Agent SDK orchestrator (`app/agent/orchestrator.py`) with specialized subagents for context enrichment and drafting (`app/agent/subagents.py`) plus MCP tools for Gmail history and profile caching (`app/agent/tools.py`).
+- **Consequences**: This reduces custom graph code and gives the agent more flexibility, but it introduces new runtime dependencies on the Claude Agent SDK, subprocess-based Claude CLI execution, stricter environment setup, and less transparent failure modes unless SDK errors are logged carefully.
+- **Classification**: **Deliberate and prudent**. The shift was actively chosen because Claude Agent SDK better matches the product's need for tool-using, context-aware email triage while keeping the backend FastAPI routes and frontend streaming API stable.
 ________________
 # Part 5: Tech Debt Heading into Code Freeze
 
@@ -156,4 +144,4 @@ ________________
 ________________
 # Part 6: What We Would Do Differently
 
-If we had another sprint, we would not have used LangGraph and instead would have used something like a Claude agent because it has more power. Claude's advantage is that it has filesystem permissions and can run its own scripts. This would be more useful for our use case because it would allow us to have more control over the agent's behavior and more flexibility in how it handles the email data.
+If we had another sprint, we would harden the Claude Agent SDK integration rather than replacing the architecture again. The biggest improvements would be clearer SDK error logging, lower-risk concurrency defaults for local demos, stronger structured-output validation, and more explicit tests around when the drafter subagent should or should not generate a reply.

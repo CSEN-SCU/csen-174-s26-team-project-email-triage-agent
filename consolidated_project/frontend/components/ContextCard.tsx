@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
+const BASELINE_CONTEXT =
+  "I am a solo technical founder building a B2B workflow product. This week, prioritize customer issues, active pilots, investor follow-ups, revenue pipeline, legal/procurement blockers, and anything that could affect trust or momentum. Put same-day replies, outages, investor asks, and blocked deals in Act today. Put strategic decisions, contract review, product feedback, and partner follow-ups in Decide this week. Deprioritize receipts, newsletters, routine vendor updates, automated notifications, and low-context cold outreach.";
+
 export function ContextCard({ onSaved }: { onSaved?: (ctx: string) => void }) {
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -30,6 +33,11 @@ export function ContextCard({ onSaved }: { onSaved?: (ctx: string) => void }) {
     }
   }
 
+  function autofillBaseline() {
+    setValue(BASELINE_CONTEXT);
+    setSavedAt(null);
+  }
+
   return (
     <section className="surface card-edge p-6">
       <p className="eyebrow text-steel">Context</p>
@@ -55,13 +63,24 @@ export function ContextCard({ onSaved }: { onSaved?: (ctx: string) => void }) {
               ? "unsaved changes"
               : "loading…"}
         </span>
-        <button
-          onClick={save}
-          disabled={saving || !loaded}
-          className="btn-primary text-xs !h-9 !px-4 disabled:opacity-50"
-        >
-          {saving ? "Saving…" : "Save context"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={autofillBaseline}
+            disabled={!loaded || saving}
+            className="btn-secondary text-xs !h-9 !px-4 disabled:opacity-50"
+          >
+            Autofill
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving || !loaded}
+            className="btn-primary text-xs !h-9 !px-4 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save context"}
+          </button>
+        </div>
       </div>
     </section>
   );

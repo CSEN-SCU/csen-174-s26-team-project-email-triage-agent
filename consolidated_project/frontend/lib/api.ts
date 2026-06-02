@@ -2,7 +2,6 @@ import type {
   DraftResult,
   Email,
   SendResult,
-  StageEvent,
   TriageDigest,
   TriageResult,
 } from "./types";
@@ -38,12 +37,12 @@ export const api = {
     return data.user_context;
   },
 
-  async triage(userContext?: string): Promise<TriageDigest> {
+  async triage(userContext?: string, emailIds?: string[]): Promise<TriageDigest> {
     return json(
       await fetch("/api/triage", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ user_context: userContext }),
+        body: JSON.stringify({ user_context: userContext, email_ids: emailIds }),
       })
     );
   },
@@ -69,25 +68,28 @@ export const api = {
   },
 
   /**
-   * Streams triage progress via SSE. Fires `onStage` after every LangGraph node
-   * completes (per email), `onEmailDone` when all stages for an email finish.
-   * Resolves when the server sends `event: done`.
+   * Streams triage results via SSE. Fires `onResult` once per email when the
+   * agent finishes triaging it. Resolves when the server sends `event: done`.
+   *
+   * Events emitted by the server:
+   *   start  → { total: number }
+   *   result → { email_id: string, result: TriageResult }
+   *   error  → { email_id: string, message: string }
+   *   done   → {}
    */
   async triageStream(
     userContext: string | undefined,
     handlers: {
       onStart?: (total: number) => void;
-      onStage?: (e: StageEvent) => void;
-      onEmailDone?: (emailId: string) => void;
+      onResult?: (emailId: string, result: TriageResult) => void;
       onError?: (emailId: string, message: string) => void;
-      // Legacy per-email callback: fired alongside onEmailDone for compatibility.
-      onResult?: (r: TriageResult) => void;
-    }
+    },
+    emailIds?: string[]
   ): Promise<void> {
     const res = await fetch("/api/triage/stream", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ user_context: userContext }),
+      body: JSON.stringify({ user_context: userContext, email_ids: emailIds }),
     });
     if (!res.ok || !res.body) {
       throw new Error(`stream failed: ${res.status}`);
@@ -108,11 +110,14 @@ export const api = {
         if (!eventLine || !dataLine) continue;
         const event = eventLine.slice(6).trim();
         const data = dataLine.slice(5).trim();
-        if (event === "start") handlers.onStart?.(JSON.parse(data).total);
-        else if (event === "stage") handlers.onStage?.(JSON.parse(data));
-        else if (event === "email_done") {
-          const parsed = JSON.parse(data) as { email_id: string };
-          handlers.onEmailDone?.(parsed.email_id);
+        if (event === "start") {
+          handlers.onStart?.(JSON.parse(data).total);
+        } else if (event === "result") {
+          const parsed = JSON.parse(data) as {
+            email_id: string;
+            result: TriageResult;
+          };
+          handlers.onResult?.(parsed.email_id, parsed.result);
         } else if (event === "error") {
           const parsed = JSON.parse(data) as {
             email_id: string;

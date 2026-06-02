@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BucketColumn } from "@/components/BucketColumn";
-import type { Email, PartialTriageResult } from "@/lib/types";
+import type { Email, TriageResult } from "@/lib/types";
 
 const DEMO_EMAILS: Record<string, Email> = {
   "demo-act": {
@@ -37,9 +37,8 @@ const DEMO_EMAILS: Record<string, Email> = {
   },
 };
 
-const ACT_RESULT: PartialTriageResult = {
+const ACT_RESULT: TriageResult = {
   email_id: "demo-act",
-  done: true,
   signal: {
     intent: "deal",
     priority: 92,
@@ -51,9 +50,8 @@ const ACT_RESULT: PartialTriageResult = {
   actions: [{ kind: "reply", label: "Send rough Q3 metrics", due_hint: "today" }],
 };
 
-const DECIDE_RESULT: PartialTriageResult = {
+const DECIDE_RESULT: TriageResult = {
   email_id: "demo-decide",
-  done: true,
   signal: {
     intent: "customer",
     priority: 68,
@@ -65,9 +63,8 @@ const DECIDE_RESULT: PartialTriageResult = {
   actions: [{ kind: "decide", label: "Review clause 4.2 redline" }],
 };
 
-const FYI_RESULT: PartialTriageResult = {
+const FYI_RESULT: TriageResult = {
   email_id: "demo-fyi",
-  done: true,
   signal: {
     intent: "vendor",
     priority: 12,
@@ -141,7 +138,7 @@ export function LandingProductPreview() {
           <span className="w-2.5 h-2.5 rounded-full bg-decide/80" />
           <span className="w-2.5 h-2.5 rounded-full bg-hairline-strong" />
           <span className="ml-2 eyebrow text-steel truncate">
-            Email Triage · demo inbox
+            Email Triage · preview inbox
           </span>
         </div>
         <div className="p-3 sm:p-4 bg-canvas">

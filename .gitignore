@@ -4,8 +4,16 @@
 .env.*
 !.env.example
 !.env*.example
+# Generated / local docs and agent tooling
 /consolidated_project/docs/*
 notion/*
+.impeccable/
+.agents/
+**/.agents/
+skills-lock.json
+!.cursor/skills/skills-lock.json
+DESIGN.md
+
 node_modules
 /docs/superpowers/*
 .venv*

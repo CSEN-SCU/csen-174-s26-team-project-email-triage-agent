@@ -9,11 +9,8 @@ import { api } from "@/lib/api";
 import type {
   Bucket,
   Email,
-  PartialTriageResult,
-  Stage,
+  TriageResult,
 } from "@/lib/types";
-
-const STAGE_ORDER: Stage[] = ["classify", "summarize", "actions", "draft"];
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -26,7 +23,11 @@ export default function Home() {
 
   const [emails, setEmails] = useState<Email[]>([]);
   const [emailsLoading, setEmailsLoading] = useState(false);
-  const [results, setResults] = useState<Record<string, PartialTriageResult>>({});
+  const [results, setResults] = useState<Record<string, TriageResult>>({});
+  // Track email IDs that are currently being triaged (no result yet)
+  const [pending, setPending] = useState<Set<string>>(new Set());
+  // Per-email errors keyed by email ID
+  const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
   const [running, setRunning] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export default function Home() {
     if (status === "loading") return;
     setEmailsLoading(true);
     setResults({});
+    setPending(new Set());
     api
       .listEmails()
       .then((list) => setEmails(list))
@@ -49,71 +51,73 @@ export default function Home() {
   }, [emails]);
 
   const byBucket = useMemo(() => {
-    const groups: Record<Bucket, PartialTriageResult[]> = {
+    const groups: Record<Bucket, TriageResult[]> = {
       act_today: [],
       decide_this_week: [],
       fyi: [],
     };
     for (const r of Object.values(results)) {
-      if (r.signal) groups[r.signal.bucket].push(r);
+      groups[r.signal.bucket].push(r);
     }
     for (const k of Object.keys(groups) as Bucket[]) {
-      groups[k].sort((a, b) => b.signal!.priority - a.signal!.priority);
+      groups[k].sort((a, b) => b.signal.priority - a.signal.priority);
     }
     return groups;
   }, [results]);
 
-  const pending = useMemo(
-    () => Object.values(results).filter((r) => !r.signal && !r.done && !r.error),
-    [results],
-  );
-
   async function runTriage() {
     setError(null);
     setResults({});
+    setPending(new Set());
+    setEmailErrors({});
     setRunning(true);
     setTotal(null);
+    setEmailsLoading(true);
     try {
+      const refreshedEmails = await api.listEmails();
+      setEmails(refreshedEmails);
+
+      if (refreshedEmails.length === 0) {
+        return;
+      }
+
+      const triageEmailIds = refreshedEmails.map((email) => email.id);
+
       await api.triageStream(undefined, {
-        onStart: (t) => setTotal(t),
-        onStage: ({ email_id, stage, patch }) =>
-          setResults((prev) => ({
-            ...prev,
-            [email_id]: {
-              ...(prev[email_id] ?? { email_id }),
-              ...patch,
-              stage,
-            },
-          })),
-        onEmailDone: (emailId) =>
-          setResults((prev) => ({
-            ...prev,
-            [emailId]: {
-              ...(prev[emailId] ?? { email_id: emailId }),
-              done: true,
-            },
-          })),
-        onError: (emailId, message) =>
-          setResults((prev) => ({
-            ...prev,
-            [emailId]: {
-              ...(prev[emailId] ?? { email_id: emailId }),
-              error: message,
-              done: true,
-            },
-          })),
-      });
+        onStart: (t) => {
+          setTotal(t);
+          setPending(new Set(triageEmailIds));
+        },
+        onResult: (emailId, result) => {
+          setResults((prev) => ({ ...prev, [emailId]: result }));
+          setPending((prev) => {
+            const next = new Set(prev);
+            next.delete(emailId);
+            return next;
+          });
+        },
+        onError: (emailId, message) => {
+          setEmailErrors((prev) => ({ ...prev, [emailId]: message }));
+          setPending((prev) => {
+            const next = new Set(prev);
+            next.delete(emailId);
+            return next;
+          });
+        },
+      }, triageEmailIds);
     } catch (e) {
       setError(String(e));
     } finally {
       setRunning(false);
+      setPending(new Set());
+      setEmailsLoading(false);
     }
   }
 
-  const done = Object.values(results).filter((r) => r.done).length;
+  const done = Object.values(results).length;
   const sourceLabel = authed
     ? `Gmail · ${session?.user?.email ?? "connected"}`
-    : "Demo · seeded founder inbox";
+    : "Preview · sample founder inbox";
 
   return (
     <main className="max-w-7xl mx-auto px-6 pt-12 pb-20">
@@ -172,11 +176,11 @@ export default function Home() {
               </span>
             </div>
             <h3 className="text-heading-4 mt-1 leading-tight text-ink">
-              {authed ? "Your latest messages" : "Seeded founder inbox"}
+              {authed ? "Your latest messages" : "Sample founder inbox"}
             </h3>
             <p className="text-xs text-muted mt-1">
               {authed
-                ? "Pulled from Gmail (read-only). The agent sees what you see."
+                ? "Pulled from Gmail. Drafts and replies only send when you choose."
                 : "Connect Gmail above to run triage against your real inbox."}
             </p>
             <ul className="mt-4 divide-y divide-hairline text-sm">
@@ -210,7 +214,7 @@ export default function Home() {
             </div>
           )}
 
-          {!running && done === 0 && !error && (
+          {!running && done === 0 && pending.size === 0 && !error && (
             <div className="surface-quiet border border-dashed border-hairline p-10 text-center rounded-card">
               <p className="text-heading-3 mb-1 text-ink">Ready when you are.</p>
               <p className="text-sm text-slate max-w-md mx-auto">
@@ -221,23 +225,49 @@ export default function Home() {
             </div>
           )}
 
-          {pending.length > 0 && (
+          {pending.size > 0 && (
             <div className="surface card-edge p-4">
               <p className="eyebrow text-steel mb-2">
-                Classifying {pending.length}
+                Triaging {pending.size}
               </p>
               <ul className="text-sm space-y-1.5">
-                {pending.map((p) => (
+                {[...pending].map((emailId) => (
                   <li
-                    key={p.email_id}
+                    key={emailId}
                     className="flex items-center gap-2 text-charcoal"
                   >
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-ink animate-pulse-soft" />
                     <span className="truncate">
-                      {emailsById[p.email_id]?.subject ?? p.email_id}
+                      {emailsById[emailId]?.subject ?? emailId}
                     </span>
                     <span className="text-xs text-muted ml-auto">
-                      {stageLabel(p.stage)}
+                      triaging…
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {Object.keys(emailErrors).length > 0 && (
+            <div className="surface card-edge p-4 border-red-200">
+              <p className="eyebrow text-steel mb-2">
+                Failed · {Object.keys(emailErrors).length}
+              </p>
+              <ul className="text-sm space-y-1.5">
+                {Object.entries(emailErrors).map(([emailId, message]) => (
+                  <li
+                    key={emailId}
+                    className="flex items-start gap-2 text-charcoal"
+                  >
+                    <span className="inline-block mt-1 w-1.5 h-1.5 shrink-0 rounded-full bg-red-500" />
+                    <span className="min-w-0 flex-1">
+                      <span className="truncate block font-medium">
+                        {emailsById[emailId]?.subject ?? emailId}
+                      </span>
+                      <span className="text-xs text-red-700 leading-relaxed">
+                        {message}
+                      </span>
                     </span>
                   </li>
                 ))}
@@ -282,8 +312,3 @@ export default function Home() {
   );
 }
 
-function stageLabel(stage: Stage | undefined): string {
-  if (!stage) return "queued";
-  const idx = STAGE_ORDER.indexOf(stage);
-  return idx >= 0 ? `${stage} (${idx + 1}/${STAGE_ORDER.length})` : stage;
-}
