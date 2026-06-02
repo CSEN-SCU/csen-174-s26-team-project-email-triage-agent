@@ -9,9 +9,10 @@ __pycache__
 .ruff_cache
 .coverage
 htmlcov
-.venv
+.venv*
 venv
 env
+*.bak
 .env
 .env.*
 !.env.example

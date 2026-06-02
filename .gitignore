@@ -6,3 +6,6 @@
 !.env*.example
 /consolidated_project/docs/*
 notion/*
+node_modules
+/docs/superpowers/*
+.venv*

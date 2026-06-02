@@ -30,6 +30,7 @@ services:
       CLASSIFY_MODEL: ${CLASSIFY_MODEL:-claude-haiku-4-5-20251001}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       DATABASE_URL: postgresql://triage:triage@postgres:5432/triage
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
     ports:
       - "8000:8000"
 
@@ -39,7 +40,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID}
