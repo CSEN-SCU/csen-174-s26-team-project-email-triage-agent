@@ -180,7 +180,7 @@ export default function Home() {
             </h3>
             <p className="text-xs text-muted mt-1">
               {authed
-                ? "Pulled from Gmail (read-only). The agent sees what you see."
+                ? "Pulled from Gmail. Drafts and replies only send when you choose."
                 : "Connect Gmail above to run triage against your real inbox."}
             </p>
             <ul className="mt-4 divide-y divide-hairline text-sm">

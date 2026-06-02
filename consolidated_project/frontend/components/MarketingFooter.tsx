@@ -12,8 +12,8 @@ export function MarketingFooter() {
         <div>
           <p className="font-semibold text-ink">Email Triage</p>
           <p className="mt-1 max-w-md leading-relaxed">
-            Context-aware inbox triage for founders. Gmail access is read-only
-            while the agent sorts messages into action-focused buckets.
+            Context-aware inbox triage for founders, with user-approved Gmail
+            drafts and replies from the app.
           </p>
         </div>
 

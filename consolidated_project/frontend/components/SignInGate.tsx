@@ -14,9 +14,9 @@ export function SignInGate() {
           Triage your inbox, not a fixture.
         </h2>
         <p className="text-sm text-slate mt-2 max-w-xl leading-relaxed">
-          Connect Gmail (read-only) and the agent will pull your latest messages,
-          score them against the context on the left, and stream results into the
-          three buckets below.
+          Connect Gmail and the agent will pull your latest messages, score them
+          against the context on the left, and let you save drafts or send replies
+          when you choose.
         </p>
       </div>
       <button

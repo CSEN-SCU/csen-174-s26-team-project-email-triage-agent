@@ -16,15 +16,16 @@ const sections = [
   {
     title: "Using the app",
     body: [
-      "You may use the app to triage email, connect a Google account, enter agent context, and review generated classifications, summaries, and suggested actions.",
-      "You are responsible for reviewing any AI-generated output before acting on it. The app may make mistakes, omit context, or classify messages incorrectly.",
+      "You may use the app to triage email, connect a Google account, enter agent context, review generated classifications, summaries, and suggested actions, save Gmail drafts, and send replies from the app.",
+      "You are responsible for reviewing any AI-generated output before acting on it, saving it as a draft, or sending it. The app may make mistakes, omit context, or classify messages incorrectly.",
     ],
   },
   {
     title: "Google and Gmail access",
     body: [
       "If you connect Gmail, you authorize the app to access the Google account information and Gmail data needed for the triage workflow.",
-      "Gmail access is intended to be read-only unless a feature clearly asks you to send or save something. You can revoke access through your Google Account settings.",
+      "The app may request Gmail permissions to read messages, create drafts, and send email. Drafts are saved and emails are sent only when you choose those actions in the app.",
+      "You can revoke access through your Google Account settings. Revoking access may prevent inbox triage, draft saving, and in-app sending from working.",
     ],
   },
   {
@@ -39,6 +40,7 @@ const sections = [
     title: "AI output",
     body: [
       "The app may generate summaries, priorities, suggested actions, or draft language. These outputs are informational only and should be checked by a person.",
+      "If you send a reply through the app, you are responsible for the content, recipients, timing, and consequences of that email.",
       "Email Triage does not provide legal, financial, employment, security, or professional advice.",
     ],
   },
@@ -70,7 +72,7 @@ export default function TermsPage() {
       <article className="mx-auto max-w-3xl px-6 py-16 md:py-24">
         <p className="eyebrow text-steel">Legal</p>
         <h1 className="mt-3 text-hero-display text-ink">Usage Terms</h1>
-        <p className="mt-5 text-sm text-steel">Last updated: May 31, 2026</p>
+        <p className="mt-5 text-sm text-steel">Last updated: June 1, 2026</p>
         <p className="mt-8 text-[17px] leading-[1.65] text-slate">
           These terms explain how Email Triage may be used, what users are
           responsible for, and how to treat AI-generated output from the app.
