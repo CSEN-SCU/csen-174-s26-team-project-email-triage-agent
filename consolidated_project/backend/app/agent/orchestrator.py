@@ -10,7 +10,7 @@ from claude_agent_sdk import ClaudeAgentOptions, query
 from app.agent import context
 from app.agent.prompts import ORCHESTRATOR_FLOW, SYSTEM_PREAMBLE
 from app.agent.subagents import build_agents
-from app.agent.tools import triage_mcp_server
+from app.agent.tools import DRAFTER_TOOL_NAMES, TOOL_NAMES, triage_mcp_server
 from app.auth import gmail
 from app.config import settings
 from app.models.email import Email, TriageResult
@@ -26,7 +26,12 @@ def _build_options() -> ClaudeAgentOptions:
         system_prompt=f"{SYSTEM_PREAMBLE}\n\n{ORCHESTRATOR_FLOW}",
         agents=build_agents(),
         mcp_servers={"triage": triage_mcp_server},
-        allowed_tools=["Agent"],
+        # Headless query() denies any tool not pre-approved here (verified: an
+        # un-listed MCP tool is recorded in permission_denials and never runs).
+        # The enrichment + drafter subagents call these in-process Gmail/cache
+        # tools, so every one must be listed or it silently degrades to
+        # "no history" and the agent drafts without any past-email context.
+        allowed_tools=["Agent", *TOOL_NAMES, *DRAFTER_TOOL_NAMES],
         setting_sources=[],
         output_format={"type": "json_schema", "schema": _RESULT_SCHEMA},
     )

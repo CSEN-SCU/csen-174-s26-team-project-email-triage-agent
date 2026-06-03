@@ -134,7 +134,31 @@ def _to_email(msg: dict[str, Any]) -> Email:
     )
 
 
-def _fetch_inbox_sync(access_token: str, max_results: int) -> list[Email]:
+def _user_replied_last_sync(service, thread_id: str) -> bool:
+    """True if the seller sent the most recent message in the thread (i.e. they
+    already replied and the ball is in the other party's court). Uses the SENT
+    label on the latest message, so it is robust to email aliases. Fails open
+    (returns False) so a thread is never hidden because of a transient error."""
+    try:
+        thread = (
+            service.users()
+            .threads()
+            .get(userId="me", id=thread_id, format="metadata", metadataHeaders=["From"])
+            .execute()
+        )
+    except HttpError as exc:
+        logger.warning("thread %s last-sender check failed: %s", thread_id, exc)
+        return False
+    msgs = thread.get("messages") or []
+    if not msgs:
+        return False
+    latest = max(msgs, key=lambda m: int(m.get("internalDate", "0")))
+    return "SENT" in (latest.get("labelIds") or [])
+
+
+def _fetch_inbox_sync(
+    access_token: str, max_results: int, skip_replied: bool = True
+) -> list[Email]:
     service = _build_service(access_token)
     try:
         listing = (
@@ -146,21 +170,34 @@ def _fetch_inbox_sync(access_token: str, max_results: int) -> list[Email]:
     except HttpError as exc:
         raise GmailFetchError(f"gmail list failed: {exc}") from exc
 
-    ids = [m["id"] for m in listing.get("messages", [])]
-    if not ids:
+    messages = listing.get("messages", [])
+    if not messages:
         return []
 
+    # Drop threads the seller already replied to last — one threads.get per
+    # unique thread, computed before the full-body fetch so skipped threads
+    # cost nothing extra to read.
+    replied_last: dict[str, bool] = {}
+    if skip_replied:
+        for m in messages:
+            tid = m.get("threadId")
+            if tid and tid not in replied_last:
+                replied_last[tid] = _user_replied_last_sync(service, tid)
+
     out: list[Email] = []
-    for mid in ids:
+    for m in messages:
+        if skip_replied and replied_last.get(m.get("threadId")):
+            logger.info("skipping thread %s: seller replied last", m.get("threadId"))
+            continue
         try:
             msg = (
                 service.users()
                 .messages()
-                .get(userId="me", id=mid, format="full")
+                .get(userId="me", id=m["id"], format="full")
                 .execute()
             )
         except HttpError as exc:
-            logger.warning("skipping message %s: %s", mid, exc)
+            logger.warning("skipping message %s: %s", m["id"], exc)
             continue
         out.append(_to_email(msg))
     out.sort(key=lambda e: e.received_at, reverse=True)
@@ -264,8 +301,11 @@ async def create_draft_reply(
 async def fetch_inbox(
     access_token: str,
     max_results: int = _DEFAULT_MAX_RESULTS,
+    skip_replied: bool = True,
 ) -> list[Email]:
-    return await asyncio.to_thread(_fetch_inbox_sync, access_token, max_results)
+    return await asyncio.to_thread(
+        _fetch_inbox_sync, access_token, max_results, skip_replied
+    )
 
 
 async def fetch_emails_by_ids(access_token: str, ids: list[str]) -> list[Email]:

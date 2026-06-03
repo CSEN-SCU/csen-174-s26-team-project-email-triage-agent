@@ -1,8 +1,19 @@
 import pytest
 from datetime import datetime, timezone
 
+from app.agent.tools import DRAFTER_TOOL_NAMES, TOOL_NAMES
 from app.models.email import Email
 import app.agent.orchestrator as orch
+
+
+def test_build_options_preapproves_triage_tools():
+    """Headless query() denies any MCP tool not pre-approved in allowed_tools.
+    Every enrichment + drafter tool must be listed or it is silently denied
+    at runtime (returns 'no history' and the agent drafts blind)."""
+    allowed = set(orch._build_options().allowed_tools)
+    assert "Agent" in allowed
+    for name in (*TOOL_NAMES, *DRAFTER_TOOL_NAMES):
+        assert name in allowed, f"{name} not pre-approved -> denied at runtime"
 
 
 class _FakeResult:

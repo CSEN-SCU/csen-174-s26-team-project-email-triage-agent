@@ -50,6 +50,7 @@ async def _gmail_past_replies_impl(args: dict) -> dict:
     except GmailFetchError as exc:
         logger.warning("past replies failed: %s", exc)
         return _ok("no past replies available (gmail error)")
+    logger.info("gmail_past_replies: %d prior replies to %s", len(rows), args.get("contact_email"))
     if not rows:
         return _ok("no prior replies to this contact")
     return _ok(json.dumps(rows))
@@ -66,6 +67,7 @@ async def _gmail_lookup_history_impl(args: dict) -> dict:
     except GmailFetchError as exc:
         logger.warning("lookup history failed: %s", exc)
         return _ok("no history available (gmail error)")
+    logger.info("gmail_lookup_history: %d prior messages with %s", len(rows), args.get("contact_email"))
     if not rows:
         return _ok("no prior email history with this contact")
     return _ok(json.dumps(rows))
