@@ -39,6 +39,38 @@ async def _gmail_sender_history_impl(args: dict) -> dict:
     return _ok(json.dumps(rows))
 
 
+async def _gmail_past_replies_impl(args: dict) -> dict:
+    token = context.get_access_token()
+    if not token:
+        return _ok("no past replies available (not authenticated)")
+    try:
+        rows = await gmail.sample_replies_to(
+            token, args["contact_email"], int(args.get("max_messages", 3))
+        )
+    except GmailFetchError as exc:
+        logger.warning("past replies failed: %s", exc)
+        return _ok("no past replies available (gmail error)")
+    if not rows:
+        return _ok("no prior replies to this contact")
+    return _ok(json.dumps(rows))
+
+
+async def _gmail_lookup_history_impl(args: dict) -> dict:
+    token = context.get_access_token()
+    if not token:
+        return _ok("no history available (not authenticated)")
+    try:
+        rows = await gmail.fetch_contact_history(
+            token, args["contact_email"], int(args.get("max_messages", 8))
+        )
+    except GmailFetchError as exc:
+        logger.warning("lookup history failed: %s", exc)
+        return _ok("no history available (gmail error)")
+    if not rows:
+        return _ok("no prior email history with this contact")
+    return _ok(json.dumps(rows))
+
+
 async def _gmail_sample_sent_impl(args: dict) -> dict:
     token = context.get_access_token()
     if not token:
@@ -93,6 +125,20 @@ async def gmail_sample_sent(args: dict) -> dict:
     return await _gmail_sample_sent_impl(args)
 
 
+@tool("gmail_past_replies",
+      "Fetch the seller's own past replies to one contact (full text) to mirror their tone and structure.",
+      {"contact_email": str, "max_messages": int})
+async def gmail_past_replies(args: dict) -> dict:
+    return await _gmail_past_replies_impl(args)
+
+
+@tool("gmail_lookup_history",
+      "Fetch full-text past emails to/from one contact to reuse concrete facts (prices, dates, commitments) already discussed.",
+      {"contact_email": str, "max_messages": int})
+async def gmail_lookup_history(args: dict) -> dict:
+    return await _gmail_lookup_history_impl(args)
+
+
 @tool("read_profile_cache", "Read a cached profile. kind is 'voice' or 'relationship'.",
       {"kind": str, "key": str})
 async def read_profile_cache(args: dict) -> dict:
@@ -108,13 +154,27 @@ async def write_profile_cache(args: dict) -> dict:
 triage_mcp_server = create_sdk_mcp_server(
     name="triage",
     version="1.0.0",
-    tools=[gmail_sender_history, gmail_sample_sent, read_profile_cache, write_profile_cache],
+    tools=[
+        gmail_sender_history,
+        gmail_sample_sent,
+        gmail_past_replies,
+        gmail_lookup_history,
+        read_profile_cache,
+        write_profile_cache,
+    ],
 )
 
 # Fully-qualified tool names the SDK exposes (mcp__{server}__{tool}).
+# Enrichment subagent: builds the voice/relationship profile.
 TOOL_NAMES = [
     "mcp__triage__gmail_sender_history",
     "mcp__triage__gmail_sample_sent",
     "mcp__triage__read_profile_cache",
     "mcp__triage__write_profile_cache",
+]
+
+# Drafter subagent: mirrors tone from real past replies and pulls facts from history.
+DRAFTER_TOOL_NAMES = [
+    "mcp__triage__gmail_past_replies",
+    "mcp__triage__gmail_lookup_history",
 ]

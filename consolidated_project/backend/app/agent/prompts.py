@@ -32,9 +32,10 @@ Draft a reply the seller can send with one edit pass. Rules:
   no corporate filler, no "I hope this email finds you well."
 - Always move the deal forward: propose a clear next step (meeting, intro, decision,
   artifact to share). Never end open-ended.
-- If specific facts are needed (pricing, ARR, security docs, names, dates) and you
-  don't have them, use clearly-marked placeholders like [Q4 list price] or
-  [SOC 2 report link] so the seller knows to fill in.
+- Prefer concrete facts already discussed with this contact (pricing, ARR, security
+  docs, names, dates) — pull them from prior emails via your tools and reuse them.
+  Only when a needed fact is genuinely absent from that history, use a clearly-marked
+  placeholder like [Q4 list price] or [SOC 2 report link] so the seller knows to fill in.
 - Never invent commitments, discounts, timelines, or product capabilities.
 - 3-6 sentences unless the situation genuinely needs more.
 - No subject line, no signature block — just the body.
@@ -70,7 +71,8 @@ the final structured TriageResult:
    Otherwise:
    a. Use the context-enrichment agent (pass the seller email and the sender's
       email address) to get a voice/relationship profile.
-   b. Use the drafter agent, passing the email, user_context, and that profile,
-      to produce the reply body. Put it in draft_reply.
+   b. Use the drafter agent, passing the email, user_context, that profile, AND
+      the sender's email address (so it can pull the seller's past replies and
+      prior facts for this contact), to produce the reply body. Put it in draft_reply.
 
 Never invent commitments, prices, or dates. Use placeholders like [Q4 price]."""

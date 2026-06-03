@@ -359,6 +359,71 @@ def _sample_sent_sync(access_token: str, max_messages: int) -> list[str]:
     return bodies
 
 
+def _compact_full(msg: dict[str, Any]) -> dict[str, str]:
+    """Like ``_compact`` but carries the full extracted body (capped) instead of
+    Gmail's ~100-char snippet, so the drafter can mine concrete facts."""
+    headers = {
+        h["name"].lower(): h.get("value", "")
+        for h in (msg.get("payload", {}).get("headers") or [])
+    }
+    label_ids = msg.get("labelIds") or []
+    direction = "sent" if "SENT" in label_ids else "received"
+    received_at = datetime.fromtimestamp(
+        int(msg.get("internalDate", "0")) / 1000, tz=timezone.utc
+    )
+    body = _extract_body(msg.get("payload", {}) or {})
+    return {
+        "direction": direction,
+        "subject": headers.get("subject", "") or "(no subject)",
+        "date": received_at.isoformat(),
+        "body": body[:2000],
+    }
+
+
+def _fetch_contact_bodies_sync(
+    access_token: str, query: str, max_messages: int
+) -> list[dict[str, str]]:
+    service = _build_service(access_token)
+    try:
+        listing = (
+            service.users()
+            .messages()
+            .list(userId="me", q=query, maxResults=max_messages)
+            .execute()
+        )
+    except HttpError as exc:
+        raise GmailFetchError(f"gmail contact-body search failed: {exc}") from exc
+    out: list[dict[str, str]] = []
+    for m in listing.get("messages", []):
+        try:
+            msg = (
+                service.users()
+                .messages()
+                .get(userId="me", id=m["id"], format="full")
+                .execute()
+            )
+        except HttpError:
+            continue
+        out.append(_compact_full(msg))
+    return out
+
+
+def _sample_replies_to_sync(
+    access_token: str, contact_email: str, max_messages: int
+) -> list[dict[str, str]]:
+    return _fetch_contact_bodies_sync(
+        access_token, f"in:sent to:{contact_email}", max_messages
+    )
+
+
+def _fetch_contact_history_sync(
+    access_token: str, contact_email: str, max_messages: int
+) -> list[dict[str, str]]:
+    return _fetch_contact_bodies_sync(
+        access_token, f"from:{contact_email} OR to:{contact_email}", max_messages
+    )
+
+
 async def get_user_email(access_token: str) -> str:
     return await asyncio.to_thread(_get_user_email_sync, access_token)
 
@@ -373,3 +438,23 @@ async def search_threads_with(
 
 async def sample_sent(access_token: str, max_messages: int = 25) -> list[str]:
     return await asyncio.to_thread(_sample_sent_sync, access_token, max_messages)
+
+
+async def sample_replies_to(
+    access_token: str, contact_email: str, max_messages: int = 3
+) -> list[dict[str, str]]:
+    """The seller's own recent replies to one contact (full text) — used as
+    few-shot tone/structure exemplars for the drafter."""
+    return await asyncio.to_thread(
+        _sample_replies_to_sync, access_token, contact_email, max_messages
+    )
+
+
+async def fetch_contact_history(
+    access_token: str, contact_email: str, max_messages: int = 8
+) -> list[dict[str, str]]:
+    """Full-text emails to/from one contact (both directions) — used by the
+    drafter to pull concrete facts already discussed."""
+    return await asyncio.to_thread(
+        _fetch_contact_history_sync, access_token, contact_email, max_messages
+    )

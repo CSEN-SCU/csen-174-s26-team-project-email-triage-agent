@@ -1,5 +1,11 @@
+import base64
+
 import pytest
 from app.auth import gmail
+
+
+def _b64(text: str) -> str:
+    return base64.urlsafe_b64encode(text.encode()).decode().rstrip("=")
 
 
 class _Exec:
@@ -66,3 +72,46 @@ async def test_search_threads_with_returns_compact_records(monkeypatch):
     assert out and out[0]["subject"] == "Re: Pricing"
     assert out[0]["direction"] == "sent"
     assert "thanks" in out[0]["snippet"]
+
+
+@pytest.mark.asyncio
+async def test_sample_replies_to_returns_full_bodies(monkeypatch):
+    listing = {"messages": [{"id": "m1"}]}
+    msgs = {
+        "m1": {
+            "id": "m1",
+            "labelIds": ["SENT"],
+            "internalDate": "1700000000000",
+            "payload": {
+                "mimeType": "text/plain",
+                "body": {"data": _b64("Happy to do 15% off through Q4. Talk soon, Sam")},
+                "headers": [{"name": "Subject", "value": "Re: Pricing"}],
+            },
+        }
+    }
+    monkeypatch.setattr(gmail, "_build_service", lambda token: _FakeService(_FakeMessages(listing, msgs)))
+    out = await gmail.sample_replies_to("tok", "buyer@acme.com", max_messages=3)
+    assert out[0]["direction"] == "sent"
+    assert out[0]["subject"] == "Re: Pricing"
+    assert "15% off" in out[0]["body"]
+
+
+@pytest.mark.asyncio
+async def test_fetch_contact_history_carries_received_body(monkeypatch):
+    listing = {"messages": [{"id": "m1"}]}
+    msgs = {
+        "m1": {
+            "id": "m1",
+            "labelIds": ["INBOX"],
+            "internalDate": "1700000000000",
+            "payload": {
+                "mimeType": "text/plain",
+                "body": {"data": _b64("Can you confirm the SOC 2 report timeline?")},
+                "headers": [{"name": "Subject", "value": "Security"}],
+            },
+        }
+    }
+    monkeypatch.setattr(gmail, "_build_service", lambda token: _FakeService(_FakeMessages(listing, msgs)))
+    out = await gmail.fetch_contact_history("tok", "buyer@acme.com", max_messages=8)
+    assert out[0]["direction"] == "received"
+    assert "SOC 2" in out[0]["body"]
