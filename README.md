@@ -7,3 +7,7 @@
 **Description:** The Email Triage Agent is a SaaS platform that automatically organizes, prioritizes, and surfaces actionable insights from your inbox
 
 **Team Members:** Jason Wu, Ethan Diec
+
+**Demo:** https://www.youtube.com/watch?v=5GY_A2yLA90
+
+**Live App:** https://csen-174-s26-team-project-email-tri.vercel.app

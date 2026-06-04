@@ -27,3 +27,5 @@ crash.log
 *.tfvars
 !*.tfvars.example
 .terragrunt-cache/
+
+PRODUCT.md
