@@ -1,7 +1,7 @@
 # Storyboard: Email Triage Agent
 
 **Date:** 2026-04-20  
-**Source:** `docs/product-vision.md`  
+**Source:** `docs/product/product-vision.md`  
 **Format:** Classic 6-frame narrative arc (Main Character → Problem → "Oh Crap" → Solution → "Aha" → Life After)
 
 ---
@@ -109,7 +109,7 @@ Fat-marker sharpie sketches—black ink on white, minimal color. One accent colo
 
 ---
 
-## Traceability to `docs/product-vision.md`
+## Traceability to `docs/product/product-vision.md`
 
 | Vision line | Where it shows up |
 |---------------|-------------------|

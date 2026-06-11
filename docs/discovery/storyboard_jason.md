@@ -1,7 +1,7 @@
 # Storyboard: Email Triage Agent
 
 **Date:** 2026-04-20
-**Source:** `docs/product-vision.md` + `docs/problem-framing-canvas.md`
+**Source:** `docs/product/product-vision.md` + `docs/discovery/problem-framing-canvas.md`
 **Format:** Classic 6-frame narrative arc (Main Character → Problem → "Oh Crap" → Solution → "Aha" → Life After)
 
 ---

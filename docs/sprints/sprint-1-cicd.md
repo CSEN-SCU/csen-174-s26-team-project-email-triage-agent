@@ -11,7 +11,7 @@ We do not store or inject secrets through GitHub Actions: our `.github/workflows
 https://csen-174-s26-team-project-email-tri.vercel.app/
 
 # Deployment Dashboard
-![Deploy dashboard](./deploy.png)
+![Deploy dashboard](../assets/deploy.png)
 
 # Live Deployment Reflection
 

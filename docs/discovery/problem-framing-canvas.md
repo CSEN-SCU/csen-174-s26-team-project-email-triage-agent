@@ -1,7 +1,7 @@
 # Problem Framing Canvas: Entrepreneur Email Triage
 
 **Date:** 2026-04-13  
-**Source:** `docs/product-vision.md` + in-chat canvas responses
+**Source:** `docs/product/product-vision.md` + in-chat canvas responses
 
 ---
 

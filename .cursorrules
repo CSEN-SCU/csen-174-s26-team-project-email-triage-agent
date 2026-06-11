@@ -8,15 +8,15 @@ suggestions consistent with the product vision, stack, and conventions below.
 
 ## 1. Product vision (read first, do not duplicate)
 
-- **Vision statement:** see `docs/product-vision.md` for the full vision
+- **Vision statement:** see `docs/product/product-vision.md` for the full vision
   and positioning (who we build for, why, and how we differ from general-purpose
   tools like Gemini-in-Gmail).
-- **Problem framing & HMW:** see `docs/problem-framing-canvas.md` for the
+- **Problem framing & HMW:** see `docs/discovery/problem-framing-canvas.md` for the
   problem we're actually solving, assumptions we're watching, and the
   "How Might We" statement that guides scope.
-- **User narratives:** see `docs/storyboard_ethan.md` and `docs/storyboard_jason.md`
+- **User narratives:** see `docs/discovery/storyboard_ethan.md` and `docs/discovery/storyboard_jason.md`
   for teammate storyboards that ground UX decisions in concrete founder journeys.
-- **Consolidation & architecture notes:** see `architecture/architecture.md` for
+- **Consolidation & architecture notes:** see `docs/architecture/architecture.md` for
   how prototypes may merge (single-page Jason baseline, Ethan's tabs/sidebar/collapse ideas)
   and high-level diagrams.
 
@@ -172,7 +172,7 @@ Jason's app is on Next 15 — do not apply Ethan's Next 16 assumptions there.
 
 ## 6. Scope guardrails (what to keep in mind)
 
-From `docs/problem-framing-canvas.md`:
+From `docs/discovery/problem-framing-canvas.md`:
 
 - **Target user:** early-stage founders (especially technical founders less
   familiar with business processes like investor coordination). Optimize UX

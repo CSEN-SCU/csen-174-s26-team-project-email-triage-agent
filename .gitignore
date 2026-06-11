@@ -14,7 +14,7 @@ skills-lock.json
 !.cursor/skills/skills-lock.json
 DESIGN.md
 
-node_modules
+**/node_modules/
 /docs/superpowers/*
 .venv*
 

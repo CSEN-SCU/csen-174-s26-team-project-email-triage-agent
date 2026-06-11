@@ -104,4 +104,4 @@ We updated `isValidBucket` first because it was the easiest win: clearer test na
 ```
 
 # Part 5
-![jolli_connection](./jolli_connection.png)
+![jolli_connection](../assets/jolli_connection.png)
