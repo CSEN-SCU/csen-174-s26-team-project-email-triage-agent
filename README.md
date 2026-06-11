@@ -10,7 +10,7 @@
 
 **Live App:** https://csen-174-s26-team-project-email-tri.vercel.app
 
-**Technical Report:** [LINK](./docs/technical-report.md)
+**Technical Report:** [Link](./docs/report/technical-report.md)
 
 # How to Run the Project Locally:
 
